@@ -1,0 +1,11 @@
+{
+  "name": "Juntos Finance",
+  "short_name": "Juntos",
+  "description": "Gestão financeira para casais",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8f6f7",
+  "theme_color": "#702244",
+  "orientation": "portrait-primary",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
