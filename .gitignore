@@ -42,3 +42,4 @@ next-env.d.ts
 /work/
 /.vinext/
 .vite-dev*.log
+.vercel
