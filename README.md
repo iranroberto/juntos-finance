@@ -30,6 +30,41 @@ Scripts that need writable project-scoped home, npm, XDG, and temporary paths us
 - `examples/d1/` contains an optional D1 example surface
 - `drizzle.config.ts` supports local migration generation when needed
 
+## Supabase Setup
+
+The application already includes Supabase authentication, shared workspaces,
+invitations, row-level security, and realtime synchronization.
+
+1. Create a Supabase project.
+2. Copy `.env.example` to `.env.local`.
+3. Fill in the project URL, public key, and server-only secret key:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-public-key
+SUPABASE_SECRET_KEY=your-server-secret-key
+```
+
+Never expose `SUPABASE_SECRET_KEY` in client components or commit `.env.local`.
+
+4. Open the Supabase SQL Editor and run `supabase/schema.sql` once. It creates
+   profiles, workspaces, memberships, invitations, shared state, RLS policies,
+   the new-user trigger, and realtime publication.
+5. In Supabase Authentication URL Configuration, add the local callback URL:
+
+```text
+http://localhost:3000/auth/callback
+```
+
+Also add the production equivalent, such as
+`https://your-domain.example/auth/callback`, before deploying.
+6. Start the project with `npm run dev`.
+
+Without Supabase environment variables, the app remains available in local
+demonstration mode. With them configured, `AuthGate` enables email/password
+accounts and `CloudSync` synchronizes the `juntos-*` browser data for workspace
+members.
+
 ## Workspace Auth Headers
 
 OpenAI workspace sites can read the current user's email from

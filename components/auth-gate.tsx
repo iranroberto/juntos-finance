@@ -1,28 +1,151 @@
 "use client";
 
 import { useState } from "react";
-import { Heart, LoaderCircle } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  Heart,
+  LoaderCircle,
+  LockKeyhole,
+  Mail,
+  ShieldCheck,
+  TrendingUp,
+  UserRound,
+  Users,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 
+type AuthMode = "login" | "signup" | "recovery";
+type Feedback = { tone: "error" | "success"; text: string } | null;
+
+const copy = {
+  login: {
+    eyebrow: "BEM-VINDO DE VOLTA",
+    title: "Acesse sua conta",
+    description: "Entre para continuar cuidando da sua vida financeira.",
+    submit: "Entrar na minha conta",
+  },
+  signup: {
+    eyebrow: "COMECE AGORA",
+    title: "Crie sua conta",
+    description: "Organize suas finanças sozinho ou compartilhe com seu cônjuge depois.",
+    submit: "Criar conta gratuita",
+  },
+  recovery: {
+    eyebrow: "RECUPERAR ACESSO",
+    title: "Esqueceu sua senha?",
+    description: "Informe seu e-mail e enviaremos as instruções de recuperação.",
+    submit: "Enviar link de recuperação",
+  },
+} as const;
+
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { configured, loading, user } = useAuth();
-  const [mode, setMode] = useState<"login" | "signup">("login");
-  const [name, setName] = useState(""); const [email, setEmail] = useState(""); const [password, setPassword] = useState("");
-  const [busy, setBusy] = useState(false); const [message, setMessage] = useState("");
-  if (!configured) return <>{children}<div className="demo-auth-banner">Modo demonstração · conecte o Supabase para ativar logins compartilhados</div></>;
-  if (loading) return <div className="auth-loading"><LoaderCircle className="spin"/><span>Carregando seu espaço...</span></div>;
+  const [mode, setMode] = useState<AuthMode>("login");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmation, setConfirmation] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [remember, setRemember] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [feedback, setFeedback] = useState<Feedback>(null);
+
+  if (!configured) {
+    return <>{children}<div className="demo-auth-banner">Modo demonstração · conecte o Supabase para ativar o login</div></>;
+  }
+  if (loading) {
+    return <div className="auth-loading"><div className="auth-loading-mark"><Heart/><LoaderCircle className="spin"/></div><b>Juntos Finance</b><span>Preparando seu espaço seguro...</span></div>;
+  }
   if (user) return <>{children}</>;
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault(); setBusy(true); setMessage(""); const supabase = createClient();
-    if (mode === "signup") {
-      const { error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name }, emailRedirectTo: `${location.origin}/auth/callback` } });
-      setMessage(error?.message || "Conta criada. Confirme o link enviado ao seu e-mail.");
+
+  const changeMode = (next: AuthMode) => {
+    setMode(next);
+    setFeedback(null);
+    setPassword("");
+    setConfirmation("");
+  };
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setFeedback(null);
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) return setFeedback({ tone: "error", text: "Informe um e-mail válido." });
+    if (mode === "signup" && password !== confirmation) return setFeedback({ tone: "error", text: "As senhas não coincidem." });
+
+    setBusy(true);
+    const supabase = createClient();
+    if (mode === "recovery") {
+      const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, { redirectTo: `${location.origin}/auth/callback` });
+      setFeedback(error ? { tone: "error", text: error.message } : { tone: "success", text: "Enviamos o link de recuperação para seu e-mail." });
+    } else if (mode === "signup") {
+      const { error } = await supabase.auth.signUp({
+        email: normalizedEmail,
+        password,
+        options: { data: { full_name: name.trim() }, emailRedirectTo: `${location.origin}/auth/callback` },
+      });
+      setFeedback(error ? { tone: "error", text: error.message } : { tone: "success", text: "Conta criada! Confirme o link enviado ao seu e-mail." });
     } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) setMessage(error.message);
+      const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
+      if (error) setFeedback({ tone: "error", text: "E-mail ou senha incorretos. Verifique os dados e tente novamente." });
+      if (!remember) sessionStorage.setItem("juntos-session-only", "true");
     }
     setBusy(false);
   };
-  return <main className="auth-page"><section className="auth-brand"><div><Heart/><b>Juntos</b> Finance</div><h1>Finanças compartilhadas,<br/>identidades individuais.</h1><p>Cada pessoa entra com seu próprio nome e senha, mas o casal administra o mesmo espaço.</p></section><form className="auth-card" onSubmit={submit}><span>{mode === "login" ? "BEM-VINDO DE VOLTA" : "CRIAR CONTA"}</span><h2>{mode === "login" ? "Entrar no Juntos" : "Começar um espaço"}</h2><p>{mode === "login" ? "Acesse seu espaço financeiro compartilhado." : "Depois você poderá convidar outra pessoa."}</p>{mode === "signup"&&<label>Seu nome<input value={name} onChange={e=>setName(e.target.value)} required placeholder="Como deseja ser chamado?"/></label>}<label>E-mail<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required placeholder="voce@email.com"/></label><label>Senha<input type="password" minLength={6} value={password} onChange={e=>setPassword(e.target.value)} required placeholder="Mínimo de 6 caracteres"/></label>{message&&<div className="auth-message">{message}</div>}<button className="primary" disabled={busy}>{busy?<LoaderCircle className="spin"/>:mode==='login'?'Entrar':'Criar minha conta'}</button><button type="button" className="auth-switch" onClick={()=>{setMode(mode==='login'?'signup':'login');setMessage('')}}>{mode==='login'?'Ainda não tenho uma conta':'Já tenho uma conta'}</button></form></main>;
+
+  const current = copy[mode];
+  return (
+    <main className="auth-page">
+      <section className="auth-brand" aria-label="Apresentação do Juntos Finance">
+        <div className="auth-logo"><span><Heart/></span><b>Juntos</b> Finance</div>
+        <div className="auth-presentation">
+          <span className="auth-kicker"><ShieldCheck/> Finanças protegidas e organizadas</span>
+          <h1>Controle hoje.<br/><em>Construa amanhã.</em></h1>
+          <p>Um espaço simples e seguro para acompanhar sua vida financeira, definir metas e compartilhar tudo com quem você confia.</p>
+          <div className="auth-benefits">
+            <div><TrendingUp/><span><b>Visão completa</b><small>Receitas, despesas e metas em um só lugar</small></span></div>
+            <div><Users/><span><b>Individual ou em casal</b><small>Você decide quando compartilhar seu espaço</small></span></div>
+            <div><ShieldCheck/><span><b>Dados protegidos</b><small>Acesso seguro com autenticação pelo Supabase</small></span></div>
+          </div>
+        </div>
+        <div className="auth-brand-footer"><span>© 2026 Juntos Finance</span><span>Privacidade · Segurança</span></div>
+      </section>
+
+      <section className="auth-panel">
+        <form className="auth-card" onSubmit={submit}>
+          <div className="auth-mobile-logo"><Heart/><b>Juntos Finance</b></div>
+          <header>
+            <span>{current.eyebrow}</span>
+            <h2>{current.title}</h2>
+            <p>{current.description}</p>
+          </header>
+
+          {mode === "signup" && <label className="auth-field"><span>Nome completo</span><div><UserRound/><input value={name} onChange={event=>setName(event.target.value)} required autoComplete="name" placeholder="Como deseja ser chamado?"/></div></label>}
+
+          <label className="auth-field"><span>E-mail</span><div><Mail/><input type="email" value={email} onChange={event=>setEmail(event.target.value)} required autoComplete="email" placeholder="voce@email.com"/></div></label>
+
+          {mode !== "recovery" && <label className="auth-field"><span>Senha</span><div><LockKeyhole/><input type={showPassword?"text":"password"} minLength={6} value={password} onChange={event=>setPassword(event.target.value)} required autoComplete={mode==="login"?"current-password":"new-password"} placeholder="Mínimo de 6 caracteres"/><button type="button" onClick={()=>setShowPassword(!showPassword)} aria-label={showPassword?"Ocultar senha":"Mostrar senha"}>{showPassword?<EyeOff/>:<Eye/>}</button></div></label>}
+
+          {mode === "signup" && <label className="auth-field"><span>Confirmar senha</span><div><LockKeyhole/><input type={showPassword?"text":"password"} minLength={6} value={confirmation} onChange={event=>setConfirmation(event.target.value)} required autoComplete="new-password" placeholder="Digite a senha novamente"/></div></label>}
+
+          {mode === "login" && <div className="auth-options"><label><input type="checkbox" checked={remember} onChange={event=>setRemember(event.target.checked)}/><span>Lembrar de mim</span></label><button type="button" onClick={()=>changeMode("recovery")}>Esqueci minha senha</button></div>}
+
+          {feedback&&<div className={`auth-message ${feedback.tone}`}>{feedback.tone==="success"&&<CheckCircle2/>}<span>{feedback.text}</span></div>}
+
+          <button className="auth-submit" disabled={busy}>{busy?<LoaderCircle className="spin"/>:<>{current.submit}<ArrowRight/></>}</button>
+
+          <div className="auth-divider"><span>acesso seguro</span></div>
+
+          {mode === "login"&&<p className="auth-alternate">Ainda não tem uma conta? <button type="button" onClick={()=>changeMode("signup")}>Criar conta</button></p>}
+          {mode === "signup"&&<p className="auth-alternate">Já possui uma conta? <button type="button" onClick={()=>changeMode("login")}>Entrar agora</button></p>}
+          {mode === "recovery"&&<button className="auth-back" type="button" onClick={()=>changeMode("login")}>Voltar para o login</button>}
+
+          <footer>Ao continuar, você concorda com nossos <button type="button">Termos de Uso</button> e <button type="button">Política de Privacidade</button>.</footer>
+        </form>
+      </section>
+    </main>
+  );
 }
