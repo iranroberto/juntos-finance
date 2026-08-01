@@ -82,12 +82,22 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, { redirectTo: `${location.origin}/auth/callback` });
       setFeedback(error ? { tone: "error", text: error.message } : { tone: "success", text: "Enviamos o link de recuperação para seu e-mail." });
     } else if (mode === "signup") {
-      const { error } = await supabase.auth.signUp({
-        email: normalizedEmail,
-        password,
-        options: { data: { full_name: name.trim() }, emailRedirectTo: `${location.origin}/auth/callback` },
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), email: normalizedEmail, password }),
       });
-      setFeedback(error ? { tone: "error", text: error.message } : { tone: "success", text: "Conta criada! Confirme o link enviado ao seu e-mail." });
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setFeedback({ tone: "error", text: result.error ?? "Não foi possível criar sua conta. Tente novamente." });
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
+        if (error) {
+          setFeedback({ tone: "error", text: "Sua conta foi criada, mas não foi possível entrar automaticamente. Tente fazer login." });
+          setMode("login");
+        }
+      }
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
       if (error) setFeedback({ tone: "error", text: "E-mail ou senha incorretos. Verifique os dados e tente novamente." });
