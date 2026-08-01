@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { configureSupabaseClient, createClient } from "@/lib/supabase/client";
 
 type Member = { user_id: string; role: string; profiles: { full_name: string; email: string } | null };
 type Workspace = { id: string; name: string; role: string };
@@ -13,14 +13,27 @@ type AuthValue = {
 
 const AuthContext = createContext<AuthValue | null>(null);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({
+  children,
+  configured,
+  supabaseUrl,
+  supabaseAnonKey,
+}: {
+  children: React.ReactNode;
+  configured: boolean;
+  supabaseUrl: string;
+  supabaseAnonKey: string;
+}) {
+  if (configured) {
+    configureSupabaseClient({ url: supabaseUrl, anonKey: supabaseAnonKey });
+  }
   const [user, setUser] = useState<User | null>(null);
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
-  const [loading, setLoading] = useState(isSupabaseConfigured);
+  const [loading, setLoading] = useState(configured);
 
   const refresh = async () => {
-    if (!isSupabaseConfigured) return;
+    if (!configured) return;
     const supabase = createClient();
     const { data: { user: current } } = await supabase.auth.getUser();
     setUser(current);
@@ -38,16 +51,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    if (!isSupabaseConfigured) { setLoading(false); return; }
+    if (!configured) { setLoading(false); return; }
     refresh();
     const supabase = createClient();
     const { data } = supabase.auth.onAuthStateChange(() => setTimeout(refresh, 0));
     return () => data.subscription.unsubscribe();
-  }, []);
+  }, [configured]);
 
   return <AuthContext.Provider value={{
-    configured: isSupabaseConfigured, loading, user, workspace, members, refresh,
-    signOut: async () => { if (isSupabaseConfigured) await createClient().auth.signOut(); },
+    configured, loading, user, workspace, members, refresh,
+    signOut: async () => { if (configured) await createClient().auth.signOut(); },
   }}>{children}</AuthContext.Provider>;
 }
 

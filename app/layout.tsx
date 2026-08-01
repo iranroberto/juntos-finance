@@ -31,12 +31,23 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const isSupabaseConfigured = Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  );
+
   return (
     <html lang="pt-BR" data-theme="dark">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider
+          configured={isSupabaseConfigured}
+          supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""}
+          supabaseAnonKey={process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""}
+        >
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

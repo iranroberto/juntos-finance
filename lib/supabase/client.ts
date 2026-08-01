@@ -1,12 +1,20 @@
 import { createBrowserClient } from "@supabase/ssr";
 
-export function createClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  );
+type SupabaseBrowserConfig = {
+  url: string;
+  anonKey: string;
+};
+
+let runtimeConfig: SupabaseBrowserConfig | null = null;
+
+export function configureSupabaseClient(config: SupabaseBrowserConfig) {
+  runtimeConfig = config;
 }
 
-export const isSupabaseConfigured = Boolean(
-  process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-);
+export function createClient() {
+  if (!runtimeConfig?.url || !runtimeConfig.anonKey) {
+    throw new Error("Supabase não está configurado no navegador.");
+  }
+
+  return createBrowserClient(runtimeConfig.url, runtimeConfig.anonKey);
+}
