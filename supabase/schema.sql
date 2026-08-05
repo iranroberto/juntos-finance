@@ -181,7 +181,7 @@ create unique index if not exists invitations_token_hash_idx on public.invitatio
 create index if not exists invitations_pending_email_idx on public.invitations(lower(email),expires_at) where status='pending';
 
 create or replace function public.accept_workspace_invitation(invitation_token text)
-returns uuid language plpgsql security definer set search_path=public as $$
+returns uuid language plpgsql security definer set search_path=public,extensions as $$
 declare invitation public.invitations; current_email text;
 begin
   if auth.uid() is null then raise exception 'Autenticação necessária' using errcode='42501'; end if;
