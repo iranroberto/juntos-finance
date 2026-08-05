@@ -44,6 +44,11 @@ export function AuthProvider({
     const membership = memberships?.find(item => (item.workspaces as unknown as { id?: string } | null)?.id === preferredId) || memberships?.[0];
     const raw = membership?.workspaces as unknown as { id: string; name: string } | null;
     if (raw) {
+      if (typeof window !== "undefined" && preferredId && preferredId !== raw.id) {
+        const keep=new Set(["juntos-theme","juntos-profile","juntos-session-only","juntos-sync-client"]);
+        Object.keys(localStorage).forEach(key=>{if(key.startsWith("juntos-")&&!keep.has(key))localStorage.removeItem(key)});
+        localStorage.setItem("juntos-sync-queue","{}");
+      }
       if (typeof window !== "undefined") localStorage.setItem("juntos-active-workspace", raw.id);
       setWorkspace({ ...raw, role: membership!.role });
       const { data } = await supabase.from("workspace_members")
