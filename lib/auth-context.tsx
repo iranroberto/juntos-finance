@@ -38,10 +38,13 @@ export function AuthProvider({
     const { data: { user: current } } = await supabase.auth.getUser();
     setUser(current);
     if (!current) { setWorkspace(null); setMembers([]); setLoading(false); return; }
-    const { data: membership } = await supabase.from("workspace_members")
-      .select("role, workspaces(id,name)").eq("user_id", current.id).limit(1).maybeSingle();
+    const { data: memberships } = await supabase.from("workspace_members")
+      .select("role, workspaces(id,name)").eq("user_id", current.id);
+    const preferredId = typeof window !== "undefined" ? localStorage.getItem("juntos-active-workspace") : null;
+    const membership = memberships?.find(item => (item.workspaces as unknown as { id?: string } | null)?.id === preferredId) || memberships?.[0];
     const raw = membership?.workspaces as unknown as { id: string; name: string } | null;
     if (raw) {
+      if (typeof window !== "undefined") localStorage.setItem("juntos-active-workspace", raw.id);
       setWorkspace({ ...raw, role: membership!.role });
       const { data } = await supabase.from("workspace_members")
         .select("user_id,role,profiles(full_name,email)").eq("workspace_id", raw.id);

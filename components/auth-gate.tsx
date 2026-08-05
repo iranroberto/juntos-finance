@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowRight,
   CheckCircle2,
@@ -43,7 +43,7 @@ const copy = {
 } as const;
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
-  const { configured, loading, user } = useAuth();
+  const { configured, loading, user, refresh, signOut } = useAuth();
   const [mode, setMode] = useState<AuthMode>("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -53,6 +53,10 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const [remember, setRemember] = useState(true);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
+  const inviteToken = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('invite') : null;
+  const [processingInvite,setProcessingInvite]=useState(Boolean(inviteToken));
+  const [inviteError,setInviteError]=useState('');
+  useEffect(()=>{if(!user||!inviteToken){setProcessingInvite(false);return}let active=true;void(async()=>{setProcessingInvite(true);const response=await fetch('/api/invitations/accept',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:inviteToken})});const result=await response.json().catch(()=>({}));if(!active)return;if(response.ok){localStorage.setItem('juntos-active-workspace',result.workspaceId);window.history.replaceState({},'',window.location.pathname);await refresh()}else setInviteError(result.error||'Não foi possível aceitar o convite.');if(active)setProcessingInvite(false)})();return()=>{active=false}},[user?.id,inviteToken]);
 
   if (!configured) {
     return <>{children}<div className="demo-auth-banner">Modo demonstração · conecte o Supabase para ativar o login</div></>;
@@ -60,6 +64,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   if (loading) {
     return <div className="auth-loading"><div className="auth-loading-mark"><Heart/><LoaderCircle className="spin"/></div><b>Juntos Finance</b><span>Preparando seu espaço seguro...</span></div>;
   }
+  if (user && processingInvite) return <div className="auth-loading"><div className="auth-loading-mark"><Heart/><LoaderCircle className="spin"/></div><b>Aceitando convite...</b><span>Conectando sua conta ao espaço compartilhado.</span></div>;
+  if (user && inviteError) return <div className="auth-loading"><div className="auth-loading-mark"><Heart/><ShieldCheck/></div><b>Não foi possível aceitar o convite</b><span>{inviteError}</span><button className="auth-submit" onClick={signOut}>Entrar com outro e-mail</button></div>;
   if (user) return <>{children}</>;
 
   const changeMode = (next: AuthMode) => {
@@ -67,6 +73,17 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     setFeedback(null);
     setPassword("");
     setConfirmation("");
+  };
+
+  const acceptInvitation = async () => {
+    if (!inviteToken) return true;
+    const response = await fetch('/api/invitations/accept', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: inviteToken }) });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) { setFeedback({ tone: 'error', text: result.error || 'Não foi possível aceitar o convite.' }); return false; }
+    localStorage.setItem('juntos-active-workspace', result.workspaceId);
+    window.history.replaceState({}, '', window.location.pathname);
+    await refresh();
+    return true;
   };
 
   const submit = async (event: React.FormEvent) => {
@@ -96,11 +113,14 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         if (error) {
           setFeedback({ tone: "error", text: "Sua conta foi criada, mas não foi possível entrar automaticamente. Tente fazer login." });
           setMode("login");
+        } else {
+          await acceptInvitation();
         }
       }
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
       if (error) setFeedback({ tone: "error", text: "E-mail ou senha incorretos. Verifique os dados e tente novamente." });
+      else await acceptInvitation();
       if (!remember) sessionStorage.setItem("juntos-session-only", "true");
     }
     setBusy(false);
@@ -132,6 +152,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             <h2>{current.title}</h2>
             <p>{current.description}</p>
           </header>
+
+          {inviteToken&&<div className="auth-message success"><Users/><span>Você recebeu um convite para compartilhar um espaço financeiro. Entre ou crie sua conta usando o e-mail convidado.</span></div>}
 
           {mode === "signup" && <label className="auth-field"><span>Nome completo</span><div><UserRound/><input value={name} onChange={event=>setName(event.target.value)} required autoComplete="name" placeholder="Como deseja ser chamado?"/></div></label>}
 

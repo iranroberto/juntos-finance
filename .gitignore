@@ -45,3 +45,6 @@ next-env.d.ts
 /.vinext/
 .vite-dev*.log
 .vercel
+# local development logs
+.juntos-dev*.log
+.vite-supabase*.log
