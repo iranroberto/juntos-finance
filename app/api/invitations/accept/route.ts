@@ -27,21 +27,32 @@ export async function POST(request: Request) {
   if (invitationError) return NextResponse.json({ error: "Não foi possível consultar o convite no banco." }, { status: 500 });
   if (!invitation || invitation.status !== "pending") return NextResponse.json({ error: "Este link já foi utilizado ou cancelado. Gere um novo convite." }, { status: 400 });
   if (!invitation.expires_at || new Date(invitation.expires_at).getTime() <= Date.now()) return NextResponse.json({ error: "Este convite expirou. Gere um novo link." }, { status: 400 });
-  if (invitation.email.trim().toLowerCase() !== user.email.trim().toLowerCase()) {
+  const openLink = invitation.email.toLowerCase().endsWith("@link.juntos.finance");
+  if (!openLink && invitation.email.trim().toLowerCase() !== user.email.trim().toLowerCase()) {
     return NextResponse.json({ error: `Este convite pertence a ${invitation.email}. Entre usando exatamente esse e-mail.` }, { status: 403 });
   }
+
+  const { data: existingMembership } = await admin.from("workspace_members").select("user_id")
+    .eq("workspace_id", invitation.workspace_id).eq("user_id", user.id).maybeSingle();
+  const { count: memberCount } = await admin.from("workspace_members").select("user_id", { count: "exact", head: true })
+    .eq("workspace_id", invitation.workspace_id);
+  if (!existingMembership && (memberCount || 0) > 1) return NextResponse.json({ error: "Este espaço já está compartilhado com outra pessoa." }, { status: 409 });
+
+  const acceptedAt = new Date().toISOString();
+  const { data: claimed, error: claimError } = await admin.from("invitations").update({
+    status: "accepted", accepted_by: user.id, accepted_at: acceptedAt,
+  }).eq("id", invitation.id).eq("status", "pending").select("id").maybeSingle();
+  if (claimError || !claimed) return NextResponse.json({ error: "Este link acabou de ser utilizado. Gere um novo convite." }, { status: 409 });
 
   const { error: memberError } = await admin.from("workspace_members").upsert({
     workspace_id: invitation.workspace_id,
     user_id: user.id,
     role: invitation.role,
   }, { onConflict: "workspace_id,user_id" });
-  if (memberError) return NextResponse.json({ error: "Não foi possível adicionar sua conta ao espaço compartilhado." }, { status: 500 });
-
-  const { error: updateError } = await admin.from("invitations").update({
-    status: "accepted", accepted_by: user.id, accepted_at: new Date().toISOString(),
-  }).eq("id", invitation.id).eq("status", "pending");
-  if (updateError) return NextResponse.json({ error: "A conta entrou no espaço, mas o convite não pôde ser finalizado." }, { status: 500 });
+  if (memberError) {
+    await admin.from("invitations").update({ status: "pending", accepted_by: null, accepted_at: null }).eq("id", invitation.id).eq("accepted_by", user.id);
+    return NextResponse.json({ error: "Não foi possível adicionar sua conta ao espaço compartilhado." }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true, workspaceId: invitation.workspace_id });
 }
