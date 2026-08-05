@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 const PREFIX = "juntos-";
 const LOCAL_ONLY = new Set([
   "juntos-theme", "juntos-profile", "juntos-session-only",
-  "juntos-sync-client", "juntos-sync-queue",
+  "juntos-sync-client", "juntos-sync-queue", "juntos-active-workspace",
 ]);
 const DOCUMENT_TYPES = new Set(["balances", "settings", "dashboard-prefs", "space"]);
 const recordKey = (entityType: string, entityId: string) => `${entityType}::${entityId}`;

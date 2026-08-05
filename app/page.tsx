@@ -269,28 +269,21 @@ function SettingsPage({dark,setDark,people,setPeople}:any){
   const toggle=(key:keyof typeof prefs)=>setPrefs({...prefs,[key]:!prefs[key]});
   const changePassword=async()=>{if(newPassword.length<8){setPasswordStatus('A senha precisa ter pelo menos 8 caracteres.');return}setPasswordStatus('Atualizando senha...');const {error}=await createBrowserClient().auth.updateUser({password:newPassword});if(error){setPasswordStatus(error.message);return}setNewPassword('');setPasswordStatus('Senha alterada com sucesso.');appAction('Senha alterada com sucesso.')};
   const download=()=>{const blob=new Blob([JSON.stringify({people,currency,prefs,categories,sharingMode,partnerEmail,inviteStatus},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='juntos-finance-dados.json';a.click();URL.revokeObjectURL(url)};
-  const restoreSettings=async()=>{
-    if(!await confirmDialog('Deseja restaurar as preferências deste navegador para os valores padrão? Seus dados financeiros não serão apagados.'))return;
-    const defaultPrefs={email:true,push:true,bills:true,goals:true};
-    const defaultPeople={Rafael:{name:user?.user_metadata?.full_name||people.Rafael.name,email:user?.email||people.Rafael.email},Mariana:people.Mariana};
-    setCurrency('BRL');setPrefs(defaultPrefs);setCategories(DEFAULT_TRANSACTION_CATEGORIES);
-    setSharingMode(members.length>1?'shared':'solo');setPartnerEmail('');setInviteStatus('');setInviteLink('');
-    setPeople(defaultPeople);setDark(true);
-    localStorage.removeItem('juntos-dashboard-prefs');localStorage.setItem('juntos-theme','dark');
-    localStorage.setItem('juntos-settings',JSON.stringify({people:defaultPeople,currency:'BRL',prefs:defaultPrefs,categories:DEFAULT_TRANSACTION_CATEGORIES,sharingMode:members.length>1?'shared':'solo',partnerEmail:'',inviteStatus:''}));
-    appAction('Configurações restauradas com sucesso.');
-  };  const install=async()=>{const event=(window as any).deferredInstallPrompt;if(event){await event.prompt()}else await alertDialog('No Chrome ou Edge, abra o menu do navegador e escolha “Instalar Juntos Finance”.')};
+  const install=async()=>{const event=(window as any).deferredInstallPrompt;if(event){await event.prompt()}else await alertDialog('No Chrome ou Edge, abra o menu do navegador e escolha “Instalar Juntos Finance”.')};
   const tabs=['Perfil','Preferências','Notificações','Privacidade e segurança','Categorias','Dados e exportação'];
-  const resetSystem = async () => {
-    if (await confirmDialog('ATENÇÃO: Você tem certeza que deseja apagar TODOS os dados do aplicativo? Isso inclui transações, contas, metas e configurações. Esta ação não pode ser desfeita.')) {
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('juntos-')) localStorage.removeItem(key);
-      });
-      appAction('Sistema zerado. O aplicativo será recarregado.');
-      setTimeout(() => window.location.reload(), 1500);
-    }
-  };
-  const shareWhatsApp=()=>{if(!inviteLink)return;const message=`Convidei você para compartilhar nosso espaço no Juntos Finance. Abra este link usando o e-mail ${partnerEmail}: ${inviteLink} O convite é válido por 7 dias e cada pessoa usa sua própria senha.`;window.open(`https://wa.me/?text=${encodeURIComponent(message)}`,'_blank','noopener,noreferrer')};
+  const resetSystem=async()=>{
+    if(!workspace)return alertDialog('Não foi possível identificar seu espaço financeiro.');
+    if(!await confirmDialog('ATENÇÃO: esta ação apagará todas as transações, cartões, metas, dívidas, assinaturas, listas, orçamentos e configurações do espaço em todos os aparelhos. A conta continuará ativa. Esta ação não pode ser desfeita.','Apagar todos os dados?'))return;
+    const response=await fetch('/api/workspace/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({workspaceId:workspace.id})});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)return alertDialog(data.error||'Não foi possível apagar os dados.');
+    const activeWorkspace=localStorage.getItem('juntos-active-workspace');
+    Object.keys(localStorage).forEach(key=>{if(key.startsWith('juntos-'))localStorage.removeItem(key)});
+    if(activeWorkspace)localStorage.setItem('juntos-active-workspace',activeWorkspace);
+    localStorage.setItem('juntos-sync-queue','{}');
+    appAction('Todos os dados foram apagados. O aplicativo será recarregado.');
+    setTimeout(()=>window.location.reload(),1200);
+  };  const shareWhatsApp=()=>{if(!inviteLink)return;const message=`Convidei você para compartilhar nosso espaço no Juntos Finance. Abra este link usando o e-mail ${partnerEmail}: ${inviteLink} O convite é válido por 7 dias e cada pessoa usa sua própria senha.`;window.open(`https://wa.me/?text=${encodeURIComponent(message)}`,'_blank','noopener,noreferrer')};
   const sendInvite=async()=>{
     if(!partnerEmail.includes('@'))return;
     if(!configured||!workspace){setInviteStatus('Configure o Supabase para enviar um convite real.');return}
@@ -306,7 +299,7 @@ function SettingsPage({dark,setDark,people,setPeople}:any){
     {tab==='Notificações'&&<><h3>Notificações</h3><p>Controle os avisos que deseja receber.</p>{([['email','Notificações por e-mail'],['push','Notificações no navegador'],['bills','Lembretes de contas'],['goals','Atualizações de metas']] as const).map(([key,label])=><div className="setting-row" key={key}><span><b>{label}</b><small>Você pode alterar quando quiser</small></span><button className={`toggle ${prefs[key]?'on':''}`} onClick={()=>toggle(key)}><i/></button></div>)}</>}
     {tab==='Privacidade e segurança'&&<><h3>Privacidade e segurança</h3><p>Proteja seus dados financeiros.</p><div className="setting-row"><span><b>Alterar senha</b><small>Use no mínimo 8 caracteres</small></span><div className="category-add"><input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="Nova senha" autoComplete="new-password"/><button className="primary" onClick={changePassword} disabled={!configured}>Alterar senha</button></div></div>{passwordStatus&&<p className="invite-status">{passwordStatus}</p>}{!configured&&<p>Configure o Supabase para habilitar a alteração de senha.</p>}</>}
     {tab==='Categorias'&&<><h3>Categorias</h3><p>Organize as classificações das movimentações.</p><div className="category-list">{categories.map(x=><div key={x}><span>{x}</span><button onClick={()=>setCategories(categories.filter(c=>c!==x))}><X size={16}/></button></div>)}</div><div className="category-add"><input value={newCategory} onChange={e=>setNewCategory(e.target.value)} placeholder="Nova categoria"/><button className="primary" onClick={()=>{if(newCategory.trim()){setCategories([...categories,newCategory.trim()]);setNewCategory('')}}}><Plus size={16}/> Adicionar</button></div></>}
-    {tab==='Dados e exportação'&&<><h3>Dados e exportação</h3><p>Baixe uma cópia das configurações e informações locais.</p><div className="setting-row"><span><b>Exportar meus dados</b><small>Arquivo JSON compatível com backup</small></span><button className="primary" onClick={download}><Download size={17}/> Exportar dados</button></div><div className="setting-row"><span><b>Restaurar configurações</b><small>Volta tema, moeda, notificações e categorias aos valores padrão sem apagar seus dados financeiros</small></span><button className="ghost danger" onClick={restoreSettings}>Restaurar</button></div></>}
+    {tab==='Dados e exportação'&&<><h3>Dados e exportação</h3><p>Baixe uma cópia ou apague todo o conteúdo do espaço.</p><div className="setting-row"><span><b>Exportar meus dados</b><small>Arquivo JSON compatível com backup</small></span><button className="primary" onClick={download}><Download size={17}/> Exportar dados</button></div><div className="setting-row"><span><b>Apagar todos os dados</b><small>Exclui definitivamente os dados financeiros e configurações em todos os aparelhos</small></span><button className="ghost danger" onClick={resetSystem}>Restaurar e apagar tudo</button></div></>}
   </section></div></div>
 }
 
