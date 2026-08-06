@@ -40,7 +40,9 @@ export function AuthProvider({
     if (!current) { setWorkspace(null); setMembers([]); setLoading(false); return; }
     const { data: memberships } = await supabase.from("workspace_members")
       .select("role, workspaces(id,name)").eq("user_id", current.id);
-    const preferredId = typeof window !== "undefined" ? localStorage.getItem("juntos-active-workspace") : null;
+    const accountPreferredId = typeof current.user_metadata?.preferred_workspace_id === "string" ? current.user_metadata.preferred_workspace_id : null;
+    const localPreferredId = typeof window !== "undefined" ? localStorage.getItem("juntos-active-workspace") : null;
+    const preferredId = accountPreferredId || localPreferredId;
     const membership = memberships?.find(item => (item.workspaces as unknown as { id?: string } | null)?.id === preferredId) || memberships?.[0];
     const raw = membership?.workspaces as unknown as { id: string; name: string } | null;
     if (raw) {

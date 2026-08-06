@@ -54,5 +54,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Não foi possível adicionar sua conta ao espaço compartilhado." }, { status: 500 });
   }
 
+  const { error: preferenceError } = await admin.auth.admin.updateUserById(user.id, {
+    user_metadata: { ...user.user_metadata, preferred_workspace_id: invitation.workspace_id },
+  });
+  if (preferenceError) {
+    if (!existingMembership) await admin.from("workspace_members").delete().eq("workspace_id", invitation.workspace_id).eq("user_id", user.id);
+    await admin.from("invitations").update({ status: "pending", accepted_by: null, accepted_at: null }).eq("id", invitation.id).eq("accepted_by", user.id);
+    return NextResponse.json({ error: "Não foi possível vincular o espaço compartilhado à sua conta. Tente novamente." }, { status: 500 });
+  }
+
   return NextResponse.json({ ok: true, workspaceId: invitation.workspace_id });
 }
