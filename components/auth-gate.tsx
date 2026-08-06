@@ -53,10 +53,12 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const [remember, setRemember] = useState(true);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
-  const inviteToken = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('invite') : null;
+  const queryInvite = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('invite') : null;
+  const [inviteToken,setInviteToken]=useState<string|null>(()=>queryInvite||(typeof window!=='undefined'?sessionStorage.getItem('juntos-pending-invite'):null));
   const [processingInvite,setProcessingInvite]=useState(Boolean(inviteToken));
+  useEffect(()=>{if(queryInvite){sessionStorage.setItem('juntos-pending-invite',queryInvite);setInviteToken(queryInvite)}},[queryInvite]);
   const [inviteError,setInviteError]=useState('');
-  useEffect(()=>{if(!user||!inviteToken){setProcessingInvite(false);return}let active=true;void(async()=>{setProcessingInvite(true);const response=await fetch('/api/invitations/accept',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:inviteToken})});const result=await response.json().catch(()=>({}));if(!active)return;if(response.ok){localStorage.setItem('juntos-active-workspace',result.workspaceId);window.history.replaceState({},'',window.location.pathname);await refresh()}else setInviteError(result.error||'Não foi possível aceitar o convite.');if(active)setProcessingInvite(false)})();return()=>{active=false}},[user?.id,inviteToken]);
+  useEffect(()=>{if(!user||!inviteToken){setProcessingInvite(false);return}let active=true;void(async()=>{setProcessingInvite(true);const response=await fetch('/api/invitations/accept',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:inviteToken})});const result=await response.json().catch(()=>({}));if(!active)return;if(response.ok){sessionStorage.removeItem('juntos-pending-invite');sessionStorage.setItem('juntos-joining-workspace',result.workspaceId);localStorage.setItem('juntos-active-workspace',result.workspaceId);window.history.replaceState({},'',window.location.pathname);await refresh()}else setInviteError(result.error||'Não foi possível aceitar o convite.');if(active)setProcessingInvite(false)})();return()=>{active=false}},[user?.id,inviteToken]);
 
   if (!configured) {
     return <>{children}<div className="demo-auth-banner">Modo demonstração · conecte o Supabase para ativar o login</div></>;
@@ -80,6 +82,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     const response = await fetch('/api/invitations/accept', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: inviteToken }) });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) { setFeedback({ tone: 'error', text: result.error || 'Não foi possível aceitar o convite.' }); return false; }
+    sessionStorage.removeItem('juntos-pending-invite');
+    sessionStorage.setItem('juntos-joining-workspace',result.workspaceId);
     localStorage.setItem('juntos-active-workspace', result.workspaceId);
     window.history.replaceState({}, '', window.location.pathname);
     await refresh();

@@ -17,7 +17,7 @@ const safeParse = (value: string | null): unknown => {
   try { return JSON.parse(value); } catch { return null; }
 };
 const syncedStorageKeys = () => Object.keys(localStorage)
-  .filter(key => key.startsWith(PREFIX) && !LOCAL_ONLY.has(key));
+  .filter(key => key.startsWith(PREFIX) && !key.startsWith("juntos-workspace-backup-") && !LOCAL_ONLY.has(key));
 
 type LocalRecord = { entity_type: string; entity_id: string; data: unknown };
 type Change = LocalRecord & { deleted?: boolean };
@@ -202,12 +202,22 @@ export function CloudSync() {
             rows = await pullAll();
           }
         } else {
+          const joiningWorkspace = sessionStorage.getItem("juntos-joining-workspace") === workspace.id;
           const local = scanLocal();
           const remoteKeys = new Set(rows.map(row => recordKey(row.entity_type, row.entity_id)));
-          const queue = loadQueue();
-          if (canWrite) local.forEach((record, key) => { if (!remoteKeys.has(key)) queue[key] = record; });
+          const queue = joiningWorkspace ? {} : loadQueue();
+          if (joiningWorkspace) {
+            const keys = syncedStorageKeys();
+            if (keys.length) {
+              const backup = Object.fromEntries(keys.map(key => [key, localStorage.getItem(key)]));
+              localStorage.setItem(`juntos-workspace-backup-${Date.now()}`, JSON.stringify(backup));
+              keys.forEach(key => localStorage.removeItem(key));
+            }
+          }
+          if (canWrite && !joiningWorkspace) local.forEach((record, key) => { if (!remoteKeys.has(key)) queue[key] = record; });
           saveQueue(queue);
           applyRemote(rows, queue);
+          if (joiningWorkspace) sessionStorage.removeItem("juntos-joining-workspace");
         }
         baseline = scanLocal();
         ready = true;
