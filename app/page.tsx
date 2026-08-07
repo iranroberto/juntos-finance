@@ -22,7 +22,23 @@ import { createClient as createBrowserClient } from "@/lib/supabase/client";
 const brl = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 const DEFAULT_TRANSACTION_CATEGORIES = ['Salário','Alimentação','Mercado','Restaurante','Delivery','Transporte','Combustível','Aluguel','Condomínio','Internet','Luz','Água','Telefone','Saúde','Educação','Filhos','Viagens','Lazer','Compras','Assinaturas','Investimentos','Dívidas','Seguros','Impostos','Outros'];
 const CATEGORY_ICONS:Record<string,string>={Salário:'💰',Alimentação:'🍽️',Mercado:'🛒',Restaurante:'🍴',Delivery:'🛵',Transporte:'🚗',Combustível:'⛽',Aluguel:'🏠',Condomínio:'🏢',Internet:'🌐',Luz:'💡',Água:'💧',Telefone:'📱',Saúde:'🩺',Educação:'📚',Filhos:'🧸',Viagens:'✈️',Lazer:'🎉',Compras:'🛍️',Assinaturas:'🔄',Investimentos:'📈',Dívidas:'📉',Seguros:'🛡️',Impostos:'🧾',Outros:'🏷️'};
-const CATEGORY_ICON_OPTIONS=['🏷️','💰','🛒','🍽️','🍴','☕','🛵','🚗','🚌','⛽','🏠','🏢','💡','💧','🌐','📱','🩺','💊','📚','🧸','✈️','🎉','🎮','🎬','🎵','🛍️','👕','💇','🐾','🎁','🔄','📈','📉','🛡️','🧾','🔧','❤️','⭐','🏋️','💻'];
+const CATEGORY_ICON_GROUPS=[
+  {name:'Família',icons:['👨‍👩‍👧‍👦','👶','🧒','👦','👧','👨','👩','👴','👵','🧸','❤️','🎁']},
+  {name:'Casa e vida',icons:['🏠','🏡','🏢','🛋️','🛏️','🚿','🧹','🧺','🪴','💡','💧','🔑']},
+  {name:'Tecnologia',icons:['📱','💻','🖥️','⌨️','🖱️','🎧','🔌','🔋','📡','🌐','🤖','⌚']},
+  {name:'Finanças e compras',icons:['💰','💵','💳','🪙','🏦','📈','📉','🧾','🛒','🛍️','🏷️','🎟️']},
+  {name:'Lazer',icons:['🎉','🎮','🎲','🧩','🎬','📺','📚','🎨','🎭','🎪','🎁','⭐']},
+  {name:'Transporte e viagem',icons:['🚗','🚌','🚕','🏍️','🚲','✈️','🚆','🚇','🚢','⛽','🧳','🗺️']},
+  {name:'Comidas e bebidas',icons:['🍽️','🍴','🛒','🍔','🍕','🍣','🥗','🍎','☕','🥤','🍺','🍷']},
+  {name:'Lugares e monumentos',icons:['🏥','🏫','🏪','🏨','🏛️','🏰','⛪','🗼','🗽','🏟️','🏖️','🏕️']},
+  {name:'Esportes',icons:['⚽','🏀','🏐','🎾','🏈','🏊','🚴','🏋️','🥊','⛳','🏆','🥇']},
+  {name:'Músicas e áudios',icons:['🎵','🎶','🎤','🎧','📻','🎸','🎹','🥁','🎷','🎺','🔊','💿']},
+  {name:'Fotos e vídeos',icons:['📷','📸','🎥','📹','🎬','🖼️','📺','📱','💡','🎞️','📽️','🤳']},
+  {name:'Natureza e animais',icons:['🌳','🌱','🌻','🌊','☀️','🌙','🐶','🐱','🐾','🐴','🐟','🦜']},
+  {name:'Relógios',icons:['🕐','⏰','⌚','⏱️','⏳','📅','🗓️','⏲️']},
+  {name:'Ferramentas',icons:['🔧','🔨','🪛','🛠️','⚙️','✂️','🔒','🧰','🪜','🧲','🔦','🧯']},
+  {name:'Programação e computação',icons:['💻','🖥️','⌨️','🖱️','💾','🗄️','☁️','🔐','🤖','🧑‍💻','⚙️','🌐']},
+];
 const categoryIconFor=(category:string,fallback='🏷️')=>CATEGORY_ICONS[category]||fallback;
 const appAction = (detail: string | { page: string }) => window.dispatchEvent(new CustomEvent('juntos-action', { detail }));
 const systemDialog=(message:string,options:{title?:string;confirmLabel?:string;cancelLabel?:string;danger?:boolean;alert?:boolean}={})=>new Promise<boolean>(resolve=>window.dispatchEvent(new CustomEvent('juntos-dialog',{detail:{message,...options,resolve}})));
@@ -439,7 +455,7 @@ function TransactionModal({close,success,people,isCouple}:any){
       <label>Valor (R$)<input value={form.value} onChange={e=>set('value',e.target.value.replace(/[^0-9,.]/g,''))} placeholder="0,00" inputMode="decimal" required/></label>
       <label>Data<input type="date" value={form.date} onChange={e=>set('date',e.target.value)} required/></label>
       <label>Categoria<select value={form.category} onChange={e=>set('category',e.target.value)} required><option value="">Selecione</option>{categories.map(x=><option value={x} key={x}>{customCategoryIcons[x]||categoryIconFor(x)} {x}</option>)}<option value="__new">＋ Nova categoria</option></select></label>
-      {form.category==='__new'&&<div className="new-category-box field-full"><label>Nome da nova categoria<input value={form.newCategory} onChange={e=>set('newCategory',e.target.value)} placeholder="Ex.: Academia" maxLength={32} required/></label><span>Escolha um ícone</span><div className="category-icon-grid">{CATEGORY_ICON_OPTIONS.map(icon=><button type="button" className={form.categoryIcon===icon?'active':''} onClick={()=>set('categoryIcon',icon)} key={icon}>{icon}</button>)}</div></div>}
+      {form.category==='__new'&&<div className="new-category-box field-full"><label>Nome da nova categoria<input value={form.newCategory} onChange={e=>set('newCategory',e.target.value)} placeholder="Ex.: Academia" maxLength={32} required/></label><span>Escolha um ícone</span><div className="category-icon-palette">{CATEGORY_ICON_GROUPS.map(group=><section className="category-icon-group" key={group.name}><b>{group.name}</b><div className="category-icon-grid">{group.icons.map((icon,index)=><button type="button" className={form.categoryIcon===icon?'active':''} onClick={()=>set('categoryIcon',icon)} key={group.name+'-'+index}>{icon}</button>)}</div></section>)}</div></div>}
       <label>Pessoa<select value={form.person} onChange={e=>set('person',e.target.value)}><option value="Rafael">Você</option><option value="Mariana">Parceiro(a)</option><option>Casal</option></select></label>
       <label>Conta<select value={form.account} onChange={e=>set('account',e.target.value)} required><option value="">Selecione</option><option>Carteira</option>{availableAccounts.map(account=><option value={account.name} key={account.id}>{account.name} · {account.bank}</option>)}</select></label>
       <label>Forma de pagamento<select value={form.payment} onChange={e=>set('payment',e.target.value)} required><option value="">Selecione</option>{['Pix','Débito','Crédito','Dinheiro','Boleto','Transferência'].map(x=><option key={x}>{x}</option>)}</select></label>
