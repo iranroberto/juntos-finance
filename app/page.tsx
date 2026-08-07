@@ -24,7 +24,7 @@ const DEFAULT_TRANSACTION_CATEGORIES = ['Salário','Alimentação','Mercado','Re
 const CATEGORY_ICONS:Record<string,string>={Salário:'💰',Alimentação:'🍽️',Mercado:'🛒',Restaurante:'🍴',Delivery:'🛵',Transporte:'🚗',Combustível:'⛽',Aluguel:'🏠',Condomínio:'🏢',Internet:'🌐',Luz:'💡',Água:'💧',Telefone:'📱',Saúde:'🩺',Educação:'📚',Filhos:'🧸',Viagens:'✈️',Lazer:'🎉',Compras:'🛍️',Assinaturas:'🔄',Investimentos:'📈',Dívidas:'📉',Seguros:'🛡️',Impostos:'🧾',Outros:'🏷️'};
 const CATEGORY_ICON_GROUPS=[
   {name:'Família',icons:['👨‍👩‍👧‍👦','👶','🧒','👦','👧','👨','👩','👴','👵','🧸','❤️','🎁']},
-  {name:'Casa e vida',icons:['🏠','🏡','🏢','🛋️','🛏️','🚿','🧹','🧺','🪴','💡','💧','🔑']},
+  {name:'Casa e vida',icons:['🏠','🏡','🏢','🛋️','🛏️','🪑','🚪','🪞','🖼️','📺','🕰️','🕯️','🏮','💡','🪴','🛁','🚿','🚽','🧻','🧴','🧼','🪥','🧹','🧺','🪣','🍳','🥣','🍽️','🥄','🔪','☕','🫖','🧊','🔌','🔑','🧯']},
   {name:'Tecnologia',icons:['📱','💻','🖥️','⌨️','🖱️','🎧','🔌','🔋','📡','🌐','🤖','⌚']},
   {name:'Finanças e compras',icons:['💰','💵','💳','🪙','🏦','📈','📉','🧾','🛒','🛍️','🏷️','🎟️']},
   {name:'Lazer',icons:['🎉','🎮','🎲','🧩','🎬','📺','📚','🎨','🎭','🎪','🎁','⭐']},
