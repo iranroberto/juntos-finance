@@ -47,4 +47,5 @@ next-env.d.ts
 .vercel
 # local development logs
 .juntos-dev*.log
+.codex-dev*.log
 .vite-supabase*.log

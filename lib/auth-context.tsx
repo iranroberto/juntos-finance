@@ -8,7 +8,8 @@ type Member = { user_id: string; role: string; profiles: { full_name: string; em
 type Workspace = { id: string; name: string; role: string };
 type AuthValue = {
   configured: boolean; loading: boolean; user: User | null; workspace: Workspace | null;
-  members: Member[]; refresh: () => Promise<void>; signOut: () => Promise<void>;
+  workspaces: Workspace[]; members: Member[]; refresh: () => Promise<void>;
+  switchWorkspace: (workspaceId: string) => Promise<void>; signOut: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthValue | null>(null);
@@ -29,6 +30,7 @@ export function AuthProvider({
   }
   const [user, setUser] = useState<User | null>(null);
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(configured);
 
@@ -37,16 +39,18 @@ export function AuthProvider({
     const supabase = createClient();
     const { data: { user: current } } = await supabase.auth.getUser();
     setUser(current);
-    if (!current) { setWorkspace(null); setMembers([]); setLoading(false); return; }
+    if (!current) { setWorkspace(null); setWorkspaces([]); setMembers([]); setLoading(false); return; }
     const { data: memberships } = await supabase.from("workspace_members")
       .select("role, workspaces(id,name)").eq("user_id", current.id);
+    const availableWorkspaces=(memberships||[]).flatMap(item=>{const itemWorkspace=item.workspaces as unknown as {id:string;name:string}|null;return itemWorkspace?[{...itemWorkspace,role:item.role}]:[]});
+    setWorkspaces(availableWorkspaces);
     const accountPreferredId = typeof current.user_metadata?.preferred_workspace_id === "string" ? current.user_metadata.preferred_workspace_id : null;
     const localPreferredId = typeof window !== "undefined" ? localStorage.getItem("juntos-active-workspace") : null;
     const preferredId = accountPreferredId || localPreferredId;
     const membership = memberships?.find(item => (item.workspaces as unknown as { id?: string } | null)?.id === preferredId) || memberships?.[0];
     const raw = membership?.workspaces as unknown as { id: string; name: string } | null;
     if (raw) {
-      if (typeof window !== "undefined" && preferredId && preferredId !== raw.id) {
+      if (typeof window !== "undefined" && localPreferredId && localPreferredId !== raw.id) {
         const keep=new Set(["juntos-theme","juntos-profile","juntos-session-only","juntos-sync-client"]);
         Object.keys(localStorage).forEach(key=>{if(key.startsWith("juntos-")&&!keep.has(key))localStorage.removeItem(key)});
         localStorage.setItem("juntos-sync-queue","{}");
@@ -60,6 +64,14 @@ export function AuthProvider({
     setLoading(false);
   };
 
+  const switchWorkspace = async (workspaceId: string) => {
+    if (!configured || workspaceId === workspace?.id || !workspaces.some(item => item.id === workspaceId)) return;
+    const supabase = createClient();
+    const { error } = await supabase.auth.updateUser({ data: { preferred_workspace_id: workspaceId } });
+    if (error) throw error;
+    await refresh();
+  };
+
   useEffect(() => {
     if (!configured) { setLoading(false); return; }
     refresh();
@@ -69,7 +81,7 @@ export function AuthProvider({
   }, [configured]);
 
   return <AuthContext.Provider value={{
-    configured, loading, user, workspace, members, refresh,
+    configured, loading, user, workspace, workspaces, members, refresh, switchWorkspace,
     signOut: async () => { if (configured) await createClient().auth.signOut(); },
   }}>{children}</AuthContext.Provider>;
 }

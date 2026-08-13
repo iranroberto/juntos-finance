@@ -96,7 +96,7 @@ begin
     insert into workspace_members(workspace_id,user_id,role) values(invited_workspace,new.id,member_role) on conflict do nothing;
     update invitations set status='accepted',accepted_by=new.id,accepted_at=now() where workspace_id=invited_workspace and lower(email)=lower(new.email) and status='pending';
   else
-    insert into workspaces(name,owner_id) values('Espaço de '||display_name,new.id) returning id into workspace;
+    insert into workspaces(name,owner_id) values('Minhas finanças',new.id) returning id into workspace;
     insert into workspace_members(workspace_id,user_id,role) values(workspace,new.id,'owner');
   end if;
   return new;
