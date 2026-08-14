@@ -19,6 +19,7 @@ export async function POST(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Mensagem inválida." }, { status: 400 });
 
   const apiKey = process.env.OPENAI_API_KEY;
+  const model = process.env.OPENAI_MODEL || "gpt-5.1";
   if (!apiKey) {
     return NextResponse.json({ error: "A Juntos IA ainda não foi configurada no servidor." }, { status: 503 });
   }
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
       method: "POST",
       headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "gpt-5.6-sol",
+        model,
         reasoning: { effort: "medium" },
         instructions: `Você é a Juntos IA, conselheira financeira do Juntos Finance. Responda em português do Brasil, com clareza, objetividade e tom acolhedor. Use exclusivamente os dados financeiros fornecidos. Nunca invente valores, datas, categorias ou conclusões. Quando faltarem dados, diga exatamente o que falta. Confira cálculos antes de responder e mostre contas resumidas quando isso ajudar. Diferencie fatos dos dados, estimativas e sugestões. Não prometa ganhos e não substitua aconselhamento profissional. Contexto financeiro atual do usuário: ${financialContext}`,
         input,
