@@ -45,6 +45,9 @@ export default function RootLayout({
 
   return (
     <html lang="pt-BR" data-theme="dark">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `window.addEventListener("beforeinstallprompt",function(event){event.preventDefault();window.deferredInstallPrompt=event;window.dispatchEvent(new Event("juntos-install-ready"));});` }} />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
