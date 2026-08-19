@@ -1,9 +1,11 @@
-const CACHE = "juntos-finance-v2";
+const CACHE = "juntos-finance-v3";
 const APP_ASSETS = [
   "/",
   "/manifest.webmanifest",
-  "/icons/icon-32.png",
-  "/icons/icon-180.png",
+  "/favicon.ico",
+  "/favicon.svg",
+  "/icons/juntos-favicon-32-v3.png",
+  "/icons/juntos-apple-icon-180-v3.png",
   "/icons/juntos-app-icon-192-v2.png",
   "/icons/juntos-app-icon-512-v2.png",
 ];

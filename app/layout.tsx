@@ -25,11 +25,11 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/icons/icon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/juntos-favicon-32-v3.png", sizes: "32x32", type: "image/png" },
       { url: "/icons/juntos-app-icon-192-v2.png", sizes: "192x192", type: "image/png" },
     ],
-    shortcut: "/icons/icon-32.png",
-    apple: [{ url: "/icons/icon-180.png", sizes: "180x180", type: "image/png" }],
+    shortcut: "/favicon.ico?v=3",
+    apple: [{ url: "/icons/juntos-apple-icon-180-v3.png", sizes: "180x180", type: "image/png" }],
   },
 };
 
