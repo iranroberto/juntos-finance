@@ -332,3 +332,46 @@ html,body{max-width:100%;overflow-x:clip}.main-shell,.main-shell main,.page-stac
 @media (max-height:500px) and (orientation:landscape){
   .topbar{position:relative}.bottom-nav{height:58px}.bottom-nav button span{display:none}.main-shell main{padding-bottom:72px}.modal-backdrop{align-items:flex-start;overflow-y:auto}.modal{margin:6px auto}
 }
+/* Nova transação: modal mais amplo, destacado e confortável para leitura. */
+.modal-backdrop:has(.transaction-modal){background:rgba(24,12,20,.72);backdrop-filter:blur(7px)}
+.transaction-modal{width:min(760px,calc(100vw - 32px));max-height:calc(100dvh - 32px);border:1px solid color-mix(in srgb,var(--wine) 22%,var(--line));border-radius:24px;box-shadow:0 32px 90px rgba(12,5,10,.48)}
+.transaction-modal-head{padding:26px 28px 20px;border-bottom:1px solid var(--line);background:linear-gradient(135deg,color-mix(in srgb,var(--surface) 94%,var(--wine)),var(--surface))}
+.transaction-modal-head h2{font-size:24px;line-height:1.2;letter-spacing:-.35px}
+.transaction-modal-head p{font-size:14px;line-height:1.5;margin-top:8px}
+.transaction-modal-header-actions .primary{min-height:42px;padding:10px 18px;font-size:14px}
+.transaction-modal-header-actions>button:last-child{width:42px;height:42px;background:var(--surface-2);border:1px solid var(--line)}
+.transaction-modal .transaction-form{gap:18px 20px;padding:24px 28px 112px}
+.transaction-form label{font-size:14px;font-weight:700;color:var(--text)}
+.transaction-form input,.transaction-form select,.transaction-form textarea{min-height:46px;margin-top:8px;padding:11px 14px;border-color:color-mix(in srgb,var(--muted) 35%,var(--line));border-radius:12px;font-size:15px;background:color-mix(in srgb,var(--surface) 96%,var(--bg))}
+.transaction-form input::placeholder,.transaction-form textarea::placeholder{color:color-mix(in srgb,var(--muted) 82%,transparent)}
+.transaction-modal-floating-actions{width:min(760px,calc(100% - 32px));padding:16px 24px;border-radius:18px}
+.transaction-modal-floating-actions .ghost,.transaction-modal-floating-actions .primary{min-height:44px;padding:11px 20px;font-size:14px}
+@media(max-width:699px){.transaction-modal{width:100%;max-height:calc(100dvh - 8px);border-radius:22px 22px 0 0}.transaction-modal-head{padding:20px 18px 16px}.transaction-modal-head h2{font-size:21px}.transaction-modal .transaction-form{padding:20px 18px 108px}.transaction-form label{font-size:13px}.transaction-form input,.transaction-form select,.transaction-form textarea{font-size:16px}.transaction-modal-floating-actions{width:100%;border-radius:0}}
+
+/* Menu Receita / Despesa / Transferência com contraste inverso ao tema. */
+.new-transaction-options{background:#211920;border-color:#4a3944;box-shadow:0 22px 55px rgba(0,0,0,.48)}
+.new-transaction-options button{color:#fff5fa}
+.new-transaction-options button:hover,.new-transaction-options button:focus-visible{background:#392a34}
+.new-transaction-options button>svg{color:#f08ab8}
+.new-transaction-options small{color:#d4c2cc}
+:root[data-theme="dark"] .new-transaction-options{background:#fff;border-color:#dfd2d8;box-shadow:0 22px 55px rgba(0,0,0,.55)}
+:root[data-theme="dark"] .new-transaction-options button{color:#271821}
+:root[data-theme="dark"] .new-transaction-options button:hover,:root[data-theme="dark"] .new-transaction-options button:focus-visible{background:#f3eaee}
+:root[data-theme="dark"] .new-transaction-options button>svg{color:#8f315e}
+:root[data-theme="dark"] .new-transaction-options small{color:#6f5f68}
+.mobile-transaction-picker-backdrop{position:fixed;inset:0;z-index:240;background:rgba(18,8,14,.62);backdrop-filter:blur(5px)}
+.mobile-transaction-picker{z-index:241}
+.mobile-transaction-picker-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 8px 12px;margin-bottom:3px;border-bottom:1px solid currentColor}
+.mobile-transaction-picker-head span,.mobile-transaction-picker-head b,.mobile-transaction-picker-head small{display:block}
+.mobile-transaction-picker-head b{font-size:16px}
+.mobile-transaction-picker-head>button{width:36px;height:36px;flex:0 0 36px;padding:0;display:grid;place-items:center;border-radius:10px;color:inherit;background:transparent;border:1px solid currentColor}
+@media(min-width:761px){.mobile-transaction-picker-backdrop{display:none}}
+@media(max-width:760px){.mobile-transaction-picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px}.mobile-transaction-picker-head{grid-column:1/-1;margin-bottom:2px}.mobile-transaction-picker>button{min-width:0;min-height:106px;padding:14px 10px;flex-direction:column;align-items:flex-start;justify-content:center;border:1px solid color-mix(in srgb,currentColor 28%,transparent);background:color-mix(in srgb,currentColor 7%,transparent)}.mobile-transaction-picker>button:nth-of-type(3){grid-column:1/-1;min-height:76px;flex-direction:row;align-items:center;justify-content:flex-start;padding:13px 16px}.mobile-transaction-picker>button>svg{flex:0 0 auto;width:23px;height:23px}.mobile-transaction-picker>button b{font-size:14px}.mobile-transaction-picker>button small{line-height:1.35;margin-top:5px}}
+@media(max-width:760px){.transaction-modal .transaction-form{grid-template-columns:repeat(2,minmax(0,1fr));gap:15px 10px}.transaction-modal .transaction-form>label,.transaction-modal .transaction-form>div{min-width:0}.transaction-modal .transaction-form>.field-full{grid-column:1/-1}.transaction-modal .transaction-form>.transaction-mobile-half{grid-column:auto}.transaction-modal .transaction-form input,.transaction-modal .transaction-form select,.transaction-modal .transaction-form textarea{min-width:0;padding-left:11px;padding-right:11px}.transaction-modal .transaction-form textarea{min-height:46px;height:46px}.transaction-modal .category-input-wrap>button{right:2px}.transaction-modal .category-input-wrap input{padding-right:34px!important}}
+@media(max-width:760px){.transaction-modal .transaction-form>*{order:5}.transaction-modal .transaction-form>label:nth-child(4){order:1}.transaction-modal .transaction-form>label:nth-child(1){order:2}.transaction-modal .transaction-form>label:nth-child(3){order:3}.transaction-modal .transaction-form>label:nth-child(2){order:4}}
+.description-picker{position:relative}
+.description-suggestions{position:absolute;z-index:35;top:64px;left:0;right:0;max-height:280px;overflow:auto;padding:6px;background:var(--surface);border:1px solid var(--line);border-radius:13px;box-shadow:0 16px 38px rgba(20,10,16,.3)}
+.description-suggestions button{width:100%;border:0;background:transparent;color:var(--text);display:flex;align-items:center;gap:8px;padding:10px;border-radius:9px;text-align:left;font-size:12px;font-weight:700}
+.description-suggestions button:hover,.description-suggestions button:focus-visible{background:var(--surface-2)}
+.description-suggestions .create-description-option{color:var(--wine);border-top:1px solid var(--line);border-radius:0 0 8px 8px;margin-top:4px;padding-top:11px}
+@media(max-width:760px){.description-suggestions{position:fixed;z-index:260;left:14px;right:14px;top:auto;bottom:92px;max-height:48dvh;padding:9px;border-radius:16px}.description-suggestions button{min-height:42px;font-size:13px}}
