@@ -1,4 +1,4 @@
-const CACHE = "juntos-finance-v3";
+const CACHE = "juntos-finance-v4";
 const APP_ASSETS = [
   "/",
   "/manifest.webmanifest",
