@@ -375,3 +375,6 @@ html,body{max-width:100%;overflow-x:clip}.main-shell,.main-shell main,.page-stac
 .description-suggestions button:hover,.description-suggestions button:focus-visible{background:var(--surface-2)}
 .description-suggestions .create-description-option{color:var(--wine);border-top:1px solid var(--line);border-radius:0 0 8px 8px;margin-top:4px;padding-top:11px}
 @media(max-width:760px){.description-suggestions{position:fixed;z-index:260;left:14px;right:14px;top:auto;bottom:92px;max-height:48dvh;padding:9px;border-radius:16px}.description-suggestions button{min-height:42px;font-size:13px}}
+
+/* Juntos Finance brand mark */
+.logo>span{background:transparent;box-shadow:none;border-radius:0}.logo>span>img{display:block;width:100%;height:100%;object-fit:contain}.auth-logo>span{background:transparent;border:0;box-shadow:none}.auth-logo>span>img{display:block;width:42px;height:42px;object-fit:contain}.auth-mobile-logo>img{width:32px;height:32px;object-fit:contain}.auth-loading-mark{background:transparent;box-shadow:none}.auth-loading-mark>img{width:48px;height:48px;object-fit:contain}.auth-loading-mark>svg:not(.spin){position:absolute;right:-2px;bottom:-2px;width:20px;height:20px;padding:3px;border-radius:50%;background:#fff;color:#702044}

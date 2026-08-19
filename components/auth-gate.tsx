@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   Eye,
   EyeOff,
-  Heart,
   LoaderCircle,
   LockKeyhole,
   Mail,
@@ -64,10 +63,10 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     return <>{children}<div className="demo-auth-banner">Modo demonstração · conecte o Supabase para ativar o login</div></>;
   }
   if (loading) {
-    return <div className="auth-loading"><div className="auth-loading-mark"><Heart/><LoaderCircle className="spin"/></div><b>Juntos Finance</b><span>Preparando seu espaço seguro...</span></div>;
+    return <div className="auth-loading"><div className="auth-loading-mark"><img src="/icons/juntos-app-icon-192-v2.png" alt=""/><LoaderCircle className="spin"/></div><b>Juntos Finance</b><span>Preparando seu espaço seguro...</span></div>;
   }
-  if (user && processingInvite) return <div className="auth-loading"><div className="auth-loading-mark"><Heart/><LoaderCircle className="spin"/></div><b>Aceitando convite...</b><span>Conectando sua conta ao espaço compartilhado.</span></div>;
-  if (user && inviteError) return <div className="auth-loading"><div className="auth-loading-mark"><Heart/><ShieldCheck/></div><b>Não foi possível aceitar o convite</b><span>{inviteError}</span><button className="auth-submit" onClick={signOut}>Entrar com outro e-mail</button></div>;
+  if (user && processingInvite) return <div className="auth-loading"><div className="auth-loading-mark"><img src="/icons/juntos-app-icon-192-v2.png" alt=""/><LoaderCircle className="spin"/></div><b>Aceitando convite...</b><span>Conectando sua conta ao espaço compartilhado.</span></div>;
+  if (user && inviteError) return <div className="auth-loading"><div className="auth-loading-mark"><img src="/icons/juntos-app-icon-192-v2.png" alt=""/><ShieldCheck/></div><b>Não foi possível aceitar o convite</b><span>{inviteError}</span><button className="auth-submit" onClick={signOut}>Entrar com outro e-mail</button></div>;
   if (user) return <>{children}</>;
 
   const changeMode = (next: AuthMode) => {
@@ -134,7 +133,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   return (
     <main className="auth-page">
       <section className="auth-brand" aria-label="Apresentação do Juntos Finance">
-        <div className="auth-logo"><span><Heart/></span><b>Juntos</b> Finance</div>
+        <div className="auth-logo"><span><img src="/icons/juntos-app-icon-192-v2.png" alt=""/></span><b>Juntos</b> Finance</div>
         <div className="auth-presentation">
           <span className="auth-kicker"><ShieldCheck/> Finanças protegidas e organizadas</span>
           <h1>Controle hoje.<br/><em>Construa amanhã.</em></h1>
@@ -150,7 +149,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
       <section className="auth-panel">
         <form className="auth-card" onSubmit={submit}>
-          <div className="auth-mobile-logo"><Heart/><b>Juntos Finance</b></div>
+          <div className="auth-mobile-logo"><img src="/icons/juntos-app-icon-192-v2.png" alt=""/><b>Juntos Finance</b></div>
           <header>
             <span>{current.eyebrow}</span>
             <h2>{current.title}</h2>

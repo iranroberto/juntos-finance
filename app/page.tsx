@@ -91,7 +91,7 @@ function Avatar({ who, small = false, label }: { who: "R" | "M"; small?: boolean
 }
 
 function Logo() {
-  return <div className="logo"><span><Heart size={17} fill="currentColor" /></span><div>Juntos <b>Finance</b></div></div>;
+  return <div className="logo"><span><img src="/icons/juntos-app-icon-192-v2.png" alt="" /></span><div>Juntos <b>Finance</b></div></div>;
 }
 
 function MetricCard({ label, value, detail, icon: Icon, tone = "default", hide = false, onToggleHide }: { label: string; value: string; detail?: string; icon: ComponentType<{size?: number}>; tone?: string; hide?: boolean; onToggleHide?:()=>void }) {
