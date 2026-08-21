@@ -345,7 +345,7 @@ html,body{max-width:100%;overflow-x:clip}.main-shell,.main-shell main,.page-stac
 .transaction-form input,.transaction-form select,.transaction-form textarea{min-height:46px;margin-top:8px;padding:11px 14px;border-color:color-mix(in srgb,var(--muted) 35%,var(--line));border-radius:12px;font-size:15px;background:color-mix(in srgb,var(--surface) 96%,var(--bg))}
 .transaction-form input::placeholder,.transaction-form textarea::placeholder{color:color-mix(in srgb,var(--muted) 82%,transparent)}
 .transaction-modal-floating-actions{width:min(760px,calc(100% - 32px));padding:16px 24px;border-radius:18px}
-.transaction-modal-floating-actions .ghost,.transaction-modal-floating-actions .primary{min-height:44px;padding:11px 20px;font-size:14px}
+.transaction-modal-floating-actions .ghost,.transaction-modal-floating-actions .primary{min-height:44px;padding:11px 20px;font-size:14px}.income-status-switch{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--surface-2)}.income-status-switch span b,.income-status-switch span small{display:block}.income-status-switch span b{font-size:14px}.income-status-switch span small{margin-top:3px;color:var(--muted);font-size:12px;font-weight:500}.income-status-switch>div{display:flex;padding:3px;border-radius:10px;background:var(--surface);border:1px solid var(--line)}.income-status-switch button{border:0;border-radius:7px;background:transparent;color:var(--muted);padding:8px 11px;font:inherit;font-size:12px;font-weight:800;cursor:pointer}.income-status-switch button.active{background:var(--green);color:#fff;box-shadow:0 2px 6px rgba(7,135,93,.24)}.income-status-switch button:last-child.active{background:var(--amber);box-shadow:0 2px 6px rgba(200,131,29,.24)}
 @media(max-width:699px){.transaction-modal{width:100%;max-height:calc(100dvh - 8px);border-radius:22px 22px 0 0}.transaction-modal-head{padding:20px 18px 16px}.transaction-modal-head h2{font-size:21px}.transaction-modal .transaction-form{padding:20px 18px 108px}.transaction-form label{font-size:13px}.transaction-form input,.transaction-form select,.transaction-form textarea{font-size:16px}.transaction-modal-floating-actions{width:100%;border-radius:0}}
 
 /* Menu Receita / Despesa / Transferência com contraste inverso ao tema. */
@@ -378,3 +378,10 @@ html,body{max-width:100%;overflow-x:clip}.main-shell,.main-shell main,.page-stac
 
 /* Juntos Finance brand mark */
 .logo>span{background:transparent;box-shadow:none;border-radius:0}.logo>span>img{display:block;width:100%;height:100%;object-fit:contain}.auth-logo>span{background:transparent;border:0;box-shadow:none}.auth-logo>span>img{display:block;width:42px;height:42px;object-fit:contain}.auth-mobile-logo>img{width:32px;height:32px;object-fit:contain}.auth-loading-mark{background:transparent;box-shadow:none}.auth-loading-mark>img{width:48px;height:48px;object-fit:contain}.auth-loading-mark>svg:not(.spin){position:absolute;right:-2px;bottom:-2px;width:20px;height:20px;padding:3px;border-radius:50%;background:#fff;color:#702044}
+
+@media(max-width:480px){.income-status-switch{align-items:flex-start;flex-direction:column}.income-status-switch>div{width:100%}.income-status-switch button{flex:1}}
+
+@media(max-width:760px){.transaction-modal .transaction-form>.income-status-switch{grid-column:auto;padding:0;border:0;background:transparent;gap:6px}.income-status-switch span small{display:none}.income-status-switch span b{font-size:13px}.income-status-switch>div{width:100%;box-sizing:border-box}.income-status-switch button{min-width:0;padding:8px 5px}}
+@media(max-width:480px){.income-status-switch{align-items:stretch;flex-direction:column}}
+
+@media(max-width:520px){.transaction-modal .schedule-field .schedule-options{grid-template-columns:repeat(3,minmax(0,1fr))}.transaction-modal .schedule-field .schedule-options button{min-width:0;padding-inline:4px}}
