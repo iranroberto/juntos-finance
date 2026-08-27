@@ -53,7 +53,7 @@ Never expose `SUPABASE_SECRET_KEY` in client components or commit `.env.local`.
 5. In Supabase Authentication URL Configuration, add the local callback URL:
 
 ```text
-http://localhost:3000/auth/callback
+http://localhost:5173/auth/callback
 ```
 
 Also add the production equivalent, such as

@@ -17,7 +17,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 
-type AuthMode = "login" | "signup" | "recovery";
+type AuthMode = "login" | "signup" | "recovery" | "reset";
 type Feedback = { tone: "error" | "success"; text: string } | null;
 
 const copy = {
@@ -39,11 +39,19 @@ const copy = {
     description: "Informe seu e-mail e enviaremos as instruções de recuperação.",
     submit: "Enviar link de recuperação",
   },
+  reset: {
+    eyebrow: "CRIAR NOVA SENHA",
+    title: "Defina sua nova senha",
+    description: "Escolha uma senha segura para voltar a acessar sua conta.",
+    submit: "Salvar nova senha",
+  },
 } as const;
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { configured, loading, user, refresh, signOut } = useAuth();
-  const [mode, setMode] = useState<AuthMode>("login");
+  const recoveryRequested = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("password_recovery") === "1";
+  const recoveryError = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("recovery_error");
+  const [mode, setMode] = useState<AuthMode>(recoveryRequested ? "reset" : "login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -51,7 +59,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [feedback, setFeedback] = useState<Feedback>(null);
+  const [feedback, setFeedback] = useState<Feedback>(recoveryError ? { tone: "error", text: "O link de recuperação é inválido ou expirou. Solicite um novo link." } : null);
   const queryInvite = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('invite') : null;
   const [inviteToken,setInviteToken]=useState<string|null>(()=>queryInvite||(typeof window!=='undefined'?sessionStorage.getItem('juntos-pending-invite'):null));
   const [processingInvite,setProcessingInvite]=useState(Boolean(inviteToken));
@@ -67,7 +75,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   }
   if (user && processingInvite) return <div className="auth-loading"><div className="auth-loading-mark"><img src="/icons/juntos-app-icon-192-v2.png" alt=""/><LoaderCircle className="spin"/></div><b>Aceitando convite...</b><span>Conectando sua conta ao espaço compartilhado.</span></div>;
   if (user && inviteError) return <div className="auth-loading"><div className="auth-loading-mark"><img src="/icons/juntos-app-icon-192-v2.png" alt=""/><ShieldCheck/></div><b>Não foi possível aceitar o convite</b><span>{inviteError}</span><button className="auth-submit" onClick={signOut}>Entrar com outro e-mail</button></div>;
-  if (user) return <>{children}</>;
+  if (user && mode !== "reset") return <>{children}</>;
 
   const changeMode = (next: AuthMode) => {
     setMode(next);
@@ -93,12 +101,24 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     event.preventDefault();
     setFeedback(null);
     const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail) return setFeedback({ tone: "error", text: "Informe um e-mail válido." });
+    if (mode !== "reset" && !normalizedEmail) return setFeedback({ tone: "error", text: "Informe um e-mail válido." });
     if (mode === "signup" && password !== confirmation) return setFeedback({ tone: "error", text: "As senhas não coincidem." });
+    if (mode === "reset" && password !== confirmation) return setFeedback({ tone: "error", text: "As senhas não coincidem." });
+    if (mode === "reset" && password.length < 8) return setFeedback({ tone: "error", text: "A nova senha precisa ter pelo menos 8 caracteres." });
 
     setBusy(true);
     const supabase = createClient();
-    if (mode === "recovery") {
+    if (mode === "reset") {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) {
+        setFeedback({ tone: "error", text: error.message });
+      } else {
+        window.history.replaceState({}, "", window.location.pathname);
+        setFeedback({ tone: "success", text: "Senha alterada com sucesso. Entrando na sua conta..." });
+        await refresh();
+        setTimeout(() => setMode("login"), 800);
+      }
+    } else if (mode === "recovery") {
       const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, { redirectTo: `${location.origin}/auth/callback` });
       setFeedback(error ? { tone: "error", text: error.message } : { tone: "success", text: "Enviamos o link de recuperação para seu e-mail." });
     } else if (mode === "signup") {
@@ -160,11 +180,11 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
           {mode === "signup" && <label className="auth-field"><span>Nome completo</span><div><UserRound/><input value={name} onChange={event=>setName(event.target.value)} required autoComplete="name" placeholder="Como deseja ser chamado?"/></div></label>}
 
-          <label className="auth-field"><span>E-mail</span><div><Mail/><input type="email" value={email} onChange={event=>setEmail(event.target.value)} required autoComplete="email" placeholder="voce@email.com"/></div></label>
+          {mode !== "reset" && <label className="auth-field"><span>E-mail</span><div><Mail/><input type="email" value={email} onChange={event=>setEmail(event.target.value)} required autoComplete="email" placeholder="voce@email.com"/></div></label>}
 
-          {mode !== "recovery" && <label className="auth-field"><span>Senha</span><div><LockKeyhole/><input type={showPassword?"text":"password"} minLength={6} value={password} onChange={event=>setPassword(event.target.value)} required autoComplete={mode==="login"?"current-password":"new-password"} placeholder="Mínimo de 6 caracteres"/><button type="button" onClick={()=>setShowPassword(!showPassword)} aria-label={showPassword?"Ocultar senha":"Mostrar senha"}>{showPassword?<EyeOff/>:<Eye/>}</button></div></label>}
+          {mode !== "recovery" && <label className="auth-field"><span>{mode === "reset" ? "Nova senha" : "Senha"}</span><div><LockKeyhole/><input type={showPassword?"text":"password"} minLength={mode === "reset" ? 8 : 6} value={password} onChange={event=>setPassword(event.target.value)} required autoComplete={mode==="login"?"current-password":"new-password"} placeholder={mode === "reset" ? "Mínimo de 8 caracteres" : "Mínimo de 6 caracteres"}/><button type="button" onClick={()=>setShowPassword(!showPassword)} aria-label={showPassword?"Ocultar senha":"Mostrar senha"}>{showPassword?<EyeOff/>:<Eye/>}</button></div></label>}
 
-          {mode === "signup" && <label className="auth-field"><span>Confirmar senha</span><div><LockKeyhole/><input type={showPassword?"text":"password"} minLength={6} value={confirmation} onChange={event=>setConfirmation(event.target.value)} required autoComplete="new-password" placeholder="Digite a senha novamente"/></div></label>}
+          {(mode === "signup" || mode === "reset") && <label className="auth-field"><span>Confirmar senha</span><div><LockKeyhole/><input type={showPassword?"text":"password"} minLength={mode === "reset" ? 8 : 6} value={confirmation} onChange={event=>setConfirmation(event.target.value)} required autoComplete="new-password" placeholder="Digite a senha novamente"/></div></label>}
 
           {mode === "login" && <div className="auth-options"><label><input type="checkbox" checked={remember} onChange={event=>setRemember(event.target.checked)}/><span>Lembrar de mim</span></label><button type="button" onClick={()=>changeMode("recovery")}>Esqueci minha senha</button></div>}
 
