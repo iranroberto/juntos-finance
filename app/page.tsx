@@ -448,9 +448,18 @@ function SettingsPage({dark,setDark,people,setPeople}:any){
   const [passwordStatus,setPasswordStatus]=useState('');
   const [sharingMode,setSharingMode]=useState<'solo'|'shared'>('solo'); const [partnerEmail,setPartnerEmail]=useState(''); const [inviteStatus,setInviteStatus]=useState(''); const [inviteLink,setInviteLink]=useState(''); const [inviteBusy,setInviteBusy]=useState(false);
   useEffect(()=>{if(!members.length)return;const owner=members.find(member=>member.role==='owner')||members[0];const partner=members.find(member=>member.user_id!==owner.user_id);setSharingMode(partner?'shared':'solo');setPeople((previous:any)=>({Rafael:{name:owner?.profiles?.full_name||previous.Rafael.name,email:owner?.profiles?.email||previous.Rafael.email},Mariana:partner?{name:partner.profiles?.full_name||previous.Mariana.name,email:partner.profiles?.email||previous.Mariana.email}:{name:'',email:''}}))},[members]);
-  useEffect(()=>{const saved=localStorage.getItem('juntos-settings');if(saved)try{const data=JSON.parse(saved);if(data.people&&!members.length)setPeople(data.people);if(data.currency)setCurrency(data.currency);if(data.prefs)setPrefs(data.prefs);if(Array.isArray(data.categories))setCategories(expenseCategoryNames(data.categories));if(data.sharingMode)setSharingMode(data.sharingMode);if(data.partnerEmail)setPartnerEmail(data.partnerEmail);if(data.inviteStatus)setInviteStatus(data.inviteStatus)}catch{}settingsLoaded.current=true},[]);
+  useEffect(()=>{const saved=localStorage.getItem('juntos-settings');if(saved)try{const data=JSON.parse(saved);if(data.people&&!members.length)setPeople(data.people);if(data.currency)setCurrency(data.currency);if(data.prefs)setPrefs({...data.prefs,push:data.prefs.push&&typeof Notification!=='undefined'&&Notification.permission==='granted'});if(Array.isArray(data.categories))setCategories(expenseCategoryNames(data.categories));if(data.sharingMode)setSharingMode(data.sharingMode);if(data.partnerEmail)setPartnerEmail(data.partnerEmail);if(data.inviteStatus)setInviteStatus(data.inviteStatus)}catch{}settingsLoaded.current=true},[]);
   useEffect(()=>{if(!settingsLoaded.current)return;const next=JSON.stringify({people,currency,prefs,categories,sharingMode,partnerEmail,inviteStatus});if(localStorage.getItem('juntos-settings')!==next)localStorage.setItem('juntos-settings',next)},[people,currency,prefs,categories,sharingMode,partnerEmail,inviteStatus]);
-  const toggle=(key:keyof typeof prefs)=>setPrefs({...prefs,[key]:!prefs[key]});
+  const toggle=async(key:keyof typeof prefs)=>{
+    if(key==='push'&&!prefs.push){
+      if(!('Notification' in window)||!('serviceWorker' in navigator)){await alertDialog('Este navegador não oferece notificações do sistema.');return}
+      const permission=await Notification.requestPermission();
+      if(permission!=='granted'){await alertDialog('Permissão não concedida. Ative as notificações do Juntos Finance nas configurações do celular.');return}
+      const registration=await navigator.serviceWorker.ready;
+      registration.active?.postMessage({type:'SHOW_NOTIFICATION',title:'Juntos Finance',body:'Notificações ativadas. Os próximos avisos aparecerão aqui.',tag:'juntos-notifications-enabled',url:'/'});
+    }
+    setPrefs(previous=>({...previous,[key]:!previous[key]}));
+  };
   const changePassword=async()=>{if(newPassword.length<8){setPasswordStatus('A senha precisa ter pelo menos 8 caracteres.');return}setPasswordStatus('Atualizando senha...');const {error}=await createBrowserClient().auth.updateUser({password:newPassword});if(error){setPasswordStatus(error.message);return}setNewPassword('');setPasswordStatus('Senha alterada com sucesso.');appAction('Senha alterada com sucesso.')};
   const download=()=>{const blob=new Blob([JSON.stringify({people,currency,prefs,categories,sharingMode,partnerEmail,inviteStatus},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='juntos-finance-dados.json';a.click();URL.revokeObjectURL(url)};
   const install=async()=>{const standalone=window.matchMedia('(display-mode: standalone)').matches||(navigator as any).standalone===true;if(standalone){await alertDialog('O Juntos Finance já está instalado neste dispositivo.');return}const event=(window as any).deferredInstallPrompt;if(event){await event.prompt();const choice=await event.userChoice;(window as any).deferredInstallPrompt=null;if(choice?.outcome==='accepted')appAction('Instalação iniciada com sucesso.');else await alertDialog('A instalação foi cancelada. Você pode tentar novamente pelo menu do navegador.');return}const isiOS=/iphone|ipad|ipod/i.test(navigator.userAgent);if(isiOS)await alertDialog('No Safari, toque em Compartilhar e depois em “Adicionar à Tela de Início”.');else await alertDialog('Abra o menu do Chrome ou Edge e escolha “Instalar Juntos Finance” ou “Adicionar à tela inicial”.')};
@@ -657,6 +666,20 @@ function FinanceApp(){
     const dailyRefresh=window.setInterval(loadAlerts,60000);
     return()=>{names.forEach(name=>window.removeEventListener(name,loadAlerts));window.removeEventListener('focus',loadAlerts);document.removeEventListener('visibilitychange',loadAlerts);window.clearInterval(dailyRefresh)}
   },[]);
+  useEffect(()=>{
+    if(!notifications.length||!('Notification' in window)||Notification.permission!=='granted'||!('serviceWorker' in navigator))return;
+    let pushEnabled=true;
+    try{const settings=JSON.parse(localStorage.getItem('juntos-settings')||'{}');pushEnabled=settings.prefs?.push!==false}catch{}
+    if(!pushEnabled)return;
+    let delivered:string[]=[];
+    try{delivered=JSON.parse(localStorage.getItem('juntos-system-notifications')||'[]')}catch{}
+    const deliveredSet=new Set(delivered);
+    const fresh=notifications.filter(notification=>!notification.read&&!deliveredSet.has(notification.id)).slice(0,3);
+    if(!fresh.length)return;
+    fresh.forEach(notification=>deliveredSet.add(notification.id));
+    localStorage.setItem('juntos-system-notifications',JSON.stringify([...deliveredSet].slice(-100)));
+    void navigator.serviceWorker.ready.then(registration=>fresh.forEach(notification=>registration.active?.postMessage({type:'SHOW_NOTIFICATION',title:notification.title,body:hidden?String(notification.text).replace(/R\$\s?[\d.,]+/g,'valor oculto'):notification.text,tag:`juntos-${notification.id}`,url:'/'})));
+  },[notifications,hidden]);
   useEffect(()=>{setStorageReady(true)},[]);
   useEffect(()=>{const saved=localStorage.getItem('juntos-theme');setDark(saved!=='light');setThemeReady(true)},[]);
   useEffect(()=>{setHidden(localStorage.getItem('juntos-private-mode')==='true')},[]);useEffect(()=>{if(!themeReady)return;document.documentElement.dataset.theme=dark?'dark':'light';localStorage.setItem('juntos-theme',dark?'dark':'light')},[dark,themeReady]);
