@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { generateLocalFinancialAnswer } from "@/lib/local-financial-advisor";
 
 const requestSchema = z.object({
   messages: z.array(z.object({
@@ -21,7 +22,8 @@ export async function POST(request: Request) {
   const apiKey = process.env.OPENAI_API_KEY;
   const model = process.env.OPENAI_MODEL || "gpt-5.1";
   if (!apiKey) {
-    return NextResponse.json({ error: "A Juntos IA ainda não foi configurada no servidor." }, { status: 503 });
+    const lastQuestion = [...parsed.data.messages].reverse().find(message => message.role === "user")?.content || "Resuma minhas finanças";
+    return NextResponse.json({ answer: generateLocalFinancialAnswer(lastQuestion, parsed.data.financialData), source: "local" });
   }
 
   const financialContext = JSON.stringify(parsed.data.financialData).slice(0, 100_000);
@@ -53,11 +55,15 @@ export async function POST(request: Request) {
     const answer = data.output
       ?.flatMap((item: any) => item.content || [])
       .find((content: any) => content.type === "output_text")?.text;
-    if (!answer) return NextResponse.json({ error: "A IA não retornou uma resposta." }, { status: 502 });
+    if (!answer) {
+      const lastQuestion = [...parsed.data.messages].reverse().find(message => message.role === "user")?.content || "Resuma minhas finanças";
+      return NextResponse.json({ answer: generateLocalFinancialAnswer(lastQuestion, parsed.data.financialData), source: "local" });
+    }
 
     return NextResponse.json({ answer });
   } catch (error) {
     const timeout = error instanceof Error && error.name === "TimeoutError";
-    return NextResponse.json({ error: timeout ? "A resposta demorou demais. Tente novamente." : "Falha ao conectar com a Juntos IA." }, { status: 502 });
+    const lastQuestion = [...parsed.data.messages].reverse().find(message => message.role === "user")?.content || "Resuma minhas finanças";
+    return NextResponse.json({ answer: generateLocalFinancialAnswer(lastQuestion, parsed.data.financialData), source: "local", fallbackReason: timeout ? "timeout" : "connection" });
   }
 }
