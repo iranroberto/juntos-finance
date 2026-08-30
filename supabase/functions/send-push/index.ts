@@ -44,7 +44,7 @@ Deno.serve(async request=>{
     webpush.setVapidDetails(env("VAPID_SUBJECT"),env("VAPID_PUBLIC_KEY"),env("VAPID_PRIVATE_KEY"));
     const supabase=createClient(env("SUPABASE_URL"),env("SUPABASE_SERVICE_ROLE_KEY"),{auth:{persistSession:false}});
     const {data:subscriptions,error:subscriptionError}=await supabase.from("push_subscriptions").select("*");if(subscriptionError)throw subscriptionError;
-    if(!subscriptions?.length)return Response.json({sent:0});
+    if(!subscriptions?.length)return Response.json({sent:0,subscriptions:0,workspaces:0});
     const workspaceIds=[...new Set(subscriptions.map(item=>item.workspace_id))];
     const {data:records,error:recordsError}=await supabase.from("workspace_records").select("workspace_id,entity_type,entity_id,data").in("workspace_id",workspaceIds).is("deleted_at",null).in("entity_type",["transactions","budgets","goals"]);if(recordsError)throw recordsError;
     const {data:preferences}=await supabase.from("notification_preferences").select("*").in("workspace_id",workspaceIds);
@@ -66,6 +66,6 @@ Deno.serve(async request=>{
         }
       }
     }
-    return Response.json({sent});
+    return Response.json({sent,subscriptions:subscriptions.length,workspaces:workspaceIds.length});
   }catch(error){console.error(error);const message=error instanceof Error?error.message:typeof error==="object"?JSON.stringify(error):String(error);return Response.json({error:message},{status:500})}
 });
