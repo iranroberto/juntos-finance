@@ -656,3 +656,19 @@ html,body{max-width:100%;overflow-x:clip}.main-shell,.main-shell main,.page-stac
 @media(max-width:370px){.goals-summary article{padding:11px}.goals-summary strong{font-size:15px}.goal-compact-head{grid-template-columns:40px minmax(0,1fr) auto;gap:9px}.goal-compact-head>i{width:40px;height:40px}.goals-page .goal-card-actions{display:grid!important;grid-template-columns:1fr}.goals-page .goal-card-actions button{width:100%}}@media(max-width:760px){.app-shell:has(.demo-auth-banner) .main-shell main:has(.goals-page){padding-bottom:calc(154px + env(safe-area-inset-bottom))}.app-shell:has(.goals-page) .demo-auth-banner{bottom:calc(86px + env(safe-area-inset-bottom));max-width:calc(100% - 24px)}}/* Keep goal cards aligned in desktop grids while preserving compact mobile height */
 @media(min-width:761px){.goals-page .goal-page-grid{align-items:stretch;grid-auto-rows:1fr}.goals-page .big-goal{display:flex;flex-direction:column;height:100%}.goals-page .goal-compact-body{display:flex;flex:1;flex-direction:column}.goals-page .goal-status{flex:1;align-items:flex-start}.goals-page .goal-card-actions{margin-top:auto!important}}
 @media(max-width:760px){.goals-page .goal-page-grid{grid-auto-rows:auto}.goals-page .big-goal{height:auto}}
+
+/* Transaction status: paid, pending and overdue share one visual language. */
+.transaction-icon.status-completed{border:2px solid var(--green);background:rgba(7,135,93,.09);color:var(--green)}
+.transaction-icon.status-pending{border:2px solid var(--amber);background:rgba(200,131,29,.10);color:var(--amber)}
+.transaction-icon.status-overdue{border:2px solid var(--red);background:rgba(193,61,78,.10);color:var(--red)}
+.transaction-situation.pago{background:rgba(7,135,93,.11);color:var(--green)}
+.transaction-situation.vencida{background:rgba(193,61,78,.12);color:var(--red)}
+.transaction-effective-date.pending{color:var(--amber);font-weight:750}
+.transaction-effective-date.completed{color:var(--green)}
+.transaction-effective-date.overdue{width:max-content;padding:5px 8px;border-radius:9px;background:rgba(193,61,78,.11);color:var(--red);font-weight:900;letter-spacing:.15px}
+@media(max-width:760px){
+  .main-shell main:has(.transactions-detail-table){padding-bottom:calc(112px + env(safe-area-inset-bottom))}
+  .transaction-description,.transaction-description>span{min-width:0}.transaction-description b{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .transaction-effective-date.overdue{font-size:11px;padding:4px 7px;white-space:nowrap}
+  .transaction-edit-button{position:relative;z-index:1}
+}
