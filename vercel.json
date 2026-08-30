@@ -1,4 +1,10 @@
 {
   "framework": "nextjs",
-  "buildCommand": "npx next build"
+  "buildCommand": "npx next build",
+  "crons": [
+    {
+      "path": "/api/notifications/run",
+      "schedule": "0 11 * * *"
+    }
+  ]
 }

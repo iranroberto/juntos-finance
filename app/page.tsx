@@ -692,20 +692,6 @@ function FinanceApp(){
     const dailyRefresh=window.setInterval(loadAlerts,60000);
     return()=>{names.forEach(name=>window.removeEventListener(name,loadAlerts));window.removeEventListener('focus',loadAlerts);document.removeEventListener('visibilitychange',loadAlerts);window.clearInterval(dailyRefresh)}
   },[]);
-  useEffect(()=>{
-    if(!notifications.length||!('Notification' in window)||Notification.permission!=='granted'||!('serviceWorker' in navigator))return;
-    let pushEnabled=true;
-    try{const settings=JSON.parse(localStorage.getItem('juntos-settings')||'{}');pushEnabled=settings.prefs?.push!==false}catch{}
-    if(!pushEnabled)return;
-    let delivered:string[]=[];
-    try{delivered=JSON.parse(localStorage.getItem('juntos-system-notifications')||'[]')}catch{}
-    const deliveredSet=new Set(delivered);
-    const fresh=notifications.filter(notification=>!notification.read&&!deliveredSet.has(notification.id)).slice(0,3);
-    if(!fresh.length)return;
-    fresh.forEach(notification=>deliveredSet.add(notification.id));
-    localStorage.setItem('juntos-system-notifications',JSON.stringify([...deliveredSet].slice(-100)));
-    void navigator.serviceWorker.ready.then(registration=>fresh.forEach(notification=>registration.active?.postMessage({type:'SHOW_NOTIFICATION',title:notification.title,body:hidden?String(notification.text).replace(/R\$\s?[\d.,]+/g,'valor oculto'):notification.text,tag:`juntos-${notification.id}`,url:'/'})));
-  },[notifications,hidden]);
   useEffect(()=>{const requested=new URLSearchParams(window.location.search).get('page');const allowed=['Dashboard','Transações','Orçamentos','Cartões','Calendário','Metas','Assinaturas','Configurações'];if(requested&&allowed.includes(requested)){setActive(requested);history.replaceState({},'',window.location.pathname)}},[]);
   useEffect(()=>{setStorageReady(true)},[]);
   useEffect(()=>{const saved=localStorage.getItem('juntos-theme');setDark(saved!=='light');setThemeReady(true)},[]);

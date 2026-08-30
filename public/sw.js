@@ -1,6 +1,7 @@
-const CACHE = "juntos-finance-v12";
+const CACHE = "juntos-finance-v13";
 const APP_ICON_PATH = "/icons/juntos-app-icon-192-v2.png?v=12";
 const APP_ICON = new URL(APP_ICON_PATH, self.location.origin).href;
+const BADGE_ICON = new URL("/icons/juntos-notification-badge-96-v1.png?v=13", self.location.origin).href;
 
 const APP_ASSETS = [
   "/",
@@ -10,6 +11,7 @@ const APP_ASSETS = [
   "/icons/juntos-apple-icon-180-v3.png",
   "/icons/juntos-app-icon-192-v2.png",
   "/icons/juntos-app-icon-512-v2.png",
+  "/icons/juntos-notification-badge-96-v1.png",
 ];
 
 self.addEventListener("install", event => {
@@ -46,7 +48,7 @@ const displayNotification = raw => {
     body: payload.body,
     tag: payload.tag || "juntos-" + payload.type + "-" + (payload.entityId || "general"),
     icon: payload.icon,
-    badge: APP_ICON,
+    badge: BADGE_ICON,
     data: { url: payload.url, type: payload.type, entityId: payload.entityId },
     renotify: false,
     vibrate: [180, 80, 180],

@@ -67,5 +67,5 @@ Deno.serve(async request=>{
       }
     }
     return Response.json({sent});
-  }catch(error){console.error(error);return Response.json({error:error instanceof Error?error.message:"Push failed"},{status:500})}
+  }catch(error){console.error(error);const message=error instanceof Error?error.message:typeof error==="object"?JSON.stringify(error):String(error);return Response.json({error:message},{status:500})}
 });
