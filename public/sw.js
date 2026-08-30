@@ -1,4 +1,7 @@
-const CACHE = "juntos-finance-v11";
+const CACHE = "juntos-finance-v12";
+const APP_ICON_PATH = "/icons/juntos-app-icon-192-v2.png?v=12";
+const APP_ICON = new URL(APP_ICON_PATH, self.location.origin).href;
+
 const APP_ASSETS = [
   "/",
   "/manifest.webmanifest",
@@ -32,7 +35,7 @@ const normalizePayload = raw => ({
   body: raw?.body || "Você tem um novo alerta financeiro.",
   type: raw?.type || "financial_alert",
   url: raw?.url || "/",
-  icon: raw?.icon || "/icons/juntos-app-icon-192-v2.png",
+  icon: raw?.icon ? new URL(raw.icon, self.location.origin).href : APP_ICON,
   entityId: raw?.entityId,
   tag: raw?.tag,
 });
@@ -43,7 +46,7 @@ const displayNotification = raw => {
     body: payload.body,
     tag: payload.tag || "juntos-" + payload.type + "-" + (payload.entityId || "general"),
     icon: payload.icon,
-    badge: "/icons/juntos-favicon-32-v3.png",
+    badge: APP_ICON,
     data: { url: payload.url, type: payload.type, entityId: payload.entityId },
     renotify: false,
     vibrate: [180, 80, 180],

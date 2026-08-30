@@ -56,7 +56,7 @@ Deno.serve(async request=>{
         const {data:existing}=await supabase.from("notification_deliveries").select("id").eq("user_id",subscription.user_id).eq("subscription_id",subscription.id).eq("dedupe_key",alert.key).maybeSingle();
         if(existing)continue;
         try{
-          await webpush.sendNotification({endpoint:subscription.endpoint,keys:{p256dh:subscription.p256dh,auth:subscription.auth}},JSON.stringify({...alert,tag:alert.key,icon:"/icons/juntos-app-icon-192-v2.png"}),{TTL:86400,urgency:alert.type.includes("overdue")||alert.type.includes("exceeded")?"high":"normal"});
+          await webpush.sendNotification({endpoint:subscription.endpoint,keys:{p256dh:subscription.p256dh,auth:subscription.auth}},JSON.stringify({...alert,tag:alert.key,icon:"/icons/juntos-app-icon-192-v2.png?v=12"}),{TTL:86400,urgency:alert.type.includes("overdue")||alert.type.includes("exceeded")?"high":"normal"});
           await supabase.from("notification_deliveries").insert({user_id:subscription.user_id,workspace_id:subscription.workspace_id,subscription_id:subscription.id,dedupe_key:alert.key,notification_type:alert.type,entity_id:alert.entityId});
           sent++;
         }catch(error){
