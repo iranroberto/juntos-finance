@@ -5,6 +5,8 @@ import handler from "vinext/server/app-router-entry";
 interface Env {
   ASSETS: Fetcher;
   DB: D1Database;
+  SUPABASE_PUSH_FUNCTION_URL?: string;
+  PUSH_CRON_SECRET?: string;
   IMAGES: {
     input(stream: ReadableStream): {
       transform(options: Record<string, unknown>): {
@@ -26,6 +28,19 @@ interface ExecutionContext {
 // const imageConfig: ImageConfig = { dangerouslyAllowSVG: true };
 
 const worker = {
+  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    if (!env.SUPABASE_PUSH_FUNCTION_URL || !env.PUSH_CRON_SECRET) {
+      console.warn("Push scheduler skipped: configure SUPABASE_PUSH_FUNCTION_URL and PUSH_CRON_SECRET.");
+      return;
+    }
+    ctx.waitUntil(fetch(env.SUPABASE_PUSH_FUNCTION_URL, {
+      method: "POST",
+      headers: { authorization: "Bearer " + env.PUSH_CRON_SECRET, "content-type": "application/json" },
+      body: "{}",
+    }).then(response => {
+      if (!response.ok) throw new Error("Push function failed with " + response.status);
+    }));
+  },
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
