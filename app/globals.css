@@ -335,6 +335,7 @@ html,body{max-width:100%;overflow-x:clip}.main-shell,.main-shell main,.page-stac
 /* Nova transação: modal mais amplo, destacado e confortável para leitura. */
 .modal-backdrop:has(.transaction-modal){background:rgba(24,12,20,.72);backdrop-filter:blur(7px)}
 .transaction-modal{width:min(760px,calc(100vw - 32px));max-height:calc(100dvh - 32px);border:1px solid color-mix(in srgb,var(--wine) 22%,var(--line));border-radius:24px;box-shadow:0 32px 90px rgba(12,5,10,.48)}
+@media(min-width:700px){.transaction-modal{overflow:hidden}.transaction-modal .transaction-form{flex:0 1 auto;max-height:calc(90vh - 160px);overflow-y:auto}.transaction-modal .transaction-modal-actions{position:static!important}}
 .transaction-modal-head{padding:26px 28px 20px;border-bottom:1px solid var(--line);background:linear-gradient(135deg,color-mix(in srgb,var(--surface) 94%,var(--wine)),var(--surface))}
 .transaction-modal-head h2{font-size:24px;line-height:1.2;letter-spacing:-.35px}
 .transaction-modal-head p{font-size:14px;line-height:1.5;margin-top:8px}
