@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/client";
 
 export type NotificationType =
   | "bill_due" | "bill_overdue" | "budget_warning" | "budget_exceeded"
-  | "goal_progress" | "goal_completed" | "financial_alert";
+  | "goal_progress" | "goal_completed" | "financial_alert" | "card_invoice_closed";
 
 export type NotificationPayload = {
   title: string;

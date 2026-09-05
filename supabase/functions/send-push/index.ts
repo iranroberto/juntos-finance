@@ -35,6 +35,15 @@ function alertsForWorkspace(records:RecordRow[],today:string):Alert[]{
     const completed=percent>=100;
     alerts.push({key:`goal:${row.entity_id}:${completed?"completed":"80"}`,type:completed?"goal_completed":"goal_progress",title:completed?"🎉 Meta concluída":"Meta próxima de ser concluída",body:completed?`Você concluiu a meta ${goal.title||"financeira"}.`:`${goal.title||"Sua meta"} já chegou a ${percent}%.`,url:"/?page=Metas",entityId:row.entity_id,preference:"goals"});
   }
+  for(const row of byType("cards")){
+    const card=row.data,invoice=amount(card.invoice),closing=String(card.closing||"");
+    if(invoice<=0||!/^\d{4}-\d{2}-\d{2}$/.test(closing)||closing>today)continue;
+    const [year,month,closingDay]=closing.split("-").map(Number);
+    const dueDay=Math.min(31,Math.max(1,amount(card.dueDay)||1));
+    const dueMonth=dueDay>closingDay?month-1:month;
+    const dueDate=new Date(Date.UTC(year,dueMonth,Math.min(dueDay,new Date(Date.UTC(year,dueMonth+1,0)).getUTCDate()))).toISOString().slice(0,10);
+    alerts.push({key:`card-closed:${row.entity_id}:${closing}`,type:"card_invoice_closed",title:"Fatura fechada",body:`${card.bank||"Cartão"}: R$ ${invoice.toFixed(2).replace(".",",")} · vencimento ${dueDate.split("-").reverse().join("/")}.`,url:"/?page=Cartões",entityId:row.entity_id,preference:"bills"});
+  }
   return alerts;
 }
 
@@ -46,7 +55,7 @@ Deno.serve(async request=>{
     const {data:subscriptions,error:subscriptionError}=await supabase.from("push_subscriptions").select("*");if(subscriptionError)throw subscriptionError;
     if(!subscriptions?.length)return Response.json({sent:0,subscriptions:0,workspaces:0});
     const workspaceIds=[...new Set(subscriptions.map(item=>item.workspace_id))];
-    const {data:records,error:recordsError}=await supabase.from("workspace_records").select("workspace_id,entity_type,entity_id,data").in("workspace_id",workspaceIds).is("deleted_at",null).in("entity_type",["transactions","budgets","goals"]);if(recordsError)throw recordsError;
+    const {data:records,error:recordsError}=await supabase.from("workspace_records").select("workspace_id,entity_type,entity_id,data").in("workspace_id",workspaceIds).is("deleted_at",null).in("entity_type",["transactions","budgets","goals","cards"]);if(recordsError)throw recordsError;
     const {data:preferences}=await supabase.from("notification_preferences").select("*").in("workspace_id",workspaceIds);
     let sent=0;
     for(const subscription of subscriptions){
