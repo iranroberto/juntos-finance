@@ -711,3 +711,8 @@ html,body{max-width:100%;overflow-x:clip}.main-shell,.main-shell main,.page-stac
 .transactions-detail-row>strong[role="button"]{padding:6px;border:1px solid transparent}
 .transactions-detail-row>.transaction-description>.transaction-icon[role="button"]:hover,.transactions-detail-row>strong[role="button"]:hover{filter:brightness(1.1);background:var(--surface-2)}
 .transactions-detail-row>.transaction-description>.transaction-icon[role="button"]:focus-visible,.transactions-detail-row>strong[role="button"]:focus-visible{outline:3px solid rgba(124,58,237,.25);outline-offset:2px}
+
+/* Keep long transaction forms scrollable on short mobile viewports. */
+.transaction-modal>form{display:flex;flex:1 1 auto;flex-direction:column;min-height:0;overflow:hidden}
+.transaction-modal>form>.transaction-form{flex:1 1 auto;min-height:0;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+@media(max-width:699px){.transaction-modal>form{width:100%}.transaction-modal>form>.transaction-form{overscroll-behavior-y:contain;padding-bottom:calc(108px + env(safe-area-inset-bottom))}}
