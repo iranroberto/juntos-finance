@@ -24,13 +24,30 @@ type Change = LocalRecord & { deleted?: boolean };
 type RemoteRecord = LocalRecord & { deleted_at: string | null; revision: number; updated_at: string };
 type Queue = Record<string, Change>;
 
+const newEntityId = (entityType: string) => `${entityType}-${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
+
 function scanLocal(): Map<string, LocalRecord> {
   const records = new Map<string, LocalRecord>();
   syncedStorageKeys().forEach(key => {
     const entityType = key.slice(PREFIX.length);
     const value = safeParse(localStorage.getItem(key));
     if (Array.isArray(value)) {
-      value.forEach((item, index) => {
+      const usedIds = new Set<string>();
+      let normalized = false;
+      const uniqueItems = value.map((item, index) => {
+        const candidate = item as { id?: string | number };
+        let entityId = candidate?.id == null ? "" : String(candidate.id);
+        if (!entityId || usedIds.has(entityId)) {
+          entityId = newEntityId(entityType);
+          normalized = true;
+          usedIds.add(entityId);
+          return { ...(item as Record<string, unknown>), id: entityId };
+        }
+        usedIds.add(entityId);
+        return item;
+      });
+      if (normalized) localStorage.setItem(key, JSON.stringify(uniqueItems));
+      uniqueItems.forEach((item, index) => {
         const candidate = item as { id?: string | number };
         const entityId = String(candidate?.id ?? `index-${index}`);
         records.set(recordKey(entityType, entityId), { entity_type: entityType, entity_id: entityId, data: item });
@@ -104,8 +121,17 @@ export function CloudSync() {
           return;
         }
 
+        // Keep local records that the server did not return. This prevents a partial
+        // remote response from erasing transactions that are still waiting to sync.
         const merged = new Map<string, unknown>();
-        entityRows.filter(row => !row.deleted_at).forEach(row => merged.set(row.entity_id, row.data));
+        if (Array.isArray(localValue)) localValue.forEach((item, index) => {
+          const candidate = item as { id?: string | number };
+          merged.set(String(candidate?.id ?? `index-${index}`), item);
+        });
+        entityRows.forEach(row => {
+          if (row.deleted_at) merged.delete(row.entity_id);
+          else merged.set(row.entity_id, row.data);
+        });
         Object.values(queue).filter(change => change.entity_type === entityType).forEach(change => {
           if (change.deleted) merged.delete(change.entity_id);
           else merged.set(change.entity_id, change.data);
