@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Juntos Finance</string>
+    <string name="title_activity_main">Juntos Finance</string>
+    <string name="package_name">com.juntosfinance.app</string>
+    <string name="custom_url_scheme">com.juntosfinance.app</string>
+</resources>

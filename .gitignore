@@ -49,3 +49,9 @@ next-env.d.ts
 .juntos-dev*.log
 .codex-dev*.log
 .vite-supabase*.log
+
+/android/.gradle/
+/android/build/
+/android/app/build/
+/android/local.properties
+/android/app/google-services.json
