@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Juntos Finance',
   webDir: 'capacitor-web',
   server: {
-    url: 'https://calendario-asti.vercel.app',
+    url: 'https://juntos-finance.vercel.app',
     cleartext: false,
     androidScheme: 'https',
   },
