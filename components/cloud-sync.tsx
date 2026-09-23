@@ -8,6 +8,7 @@ const PREFIX = "juntos-";
 const LOCAL_ONLY = new Set([
   "juntos-theme", "juntos-profile", "juntos-session-only",
   "juntos-sync-client", "juntos-sync-queue", "juntos-active-workspace",
+  "juntos-system-notifications",
 ]);
 const DOCUMENT_TYPES = new Set(["balances", "settings", "dashboard-prefs", "space"]);
 const recordKey = (entityType: string, entityId: string) => `${entityType}::${entityId}`;
@@ -70,6 +71,11 @@ export function CloudSync() {
 
   useEffect(() => {
     if (!workspace) return;
+
+    // This key belonged to an older notification cache. It is not financial data,
+    // is not used by the current app and can grow beyond browser storage limits.
+    // Removing it lets the financial records sync normally again.
+    try { localStorage.removeItem("juntos-system-notifications"); } catch {}
 
     const supabase = createClient();
     const canWrite = workspace.role === "owner" || workspace.role === "member";
