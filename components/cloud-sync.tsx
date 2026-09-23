@@ -260,22 +260,24 @@ export function CloudSync() {
     // miss an event after sleeping, changing networks or restoring a tab. A
     // small reconciliation keeps each device aligned with the workspace without
     // discarding local changes that are still in the queue.
-    const reconcile = () => {
+    const reconcile = async () => {
       detectLocalChanges();
-      void pullAndApply();
-      void flush();
+      await flush();
+      await pullAndApply();
     };
 
     const poll = window.setInterval(detectLocalChanges, 700);
-    const reconciliationPoll = window.setInterval(reconcile, 30_000);
-    const online = reconcile;
-    const storage = reconcile;
+    const reconciliationPoll = window.setInterval(() => void reconcile(), 30_000);
+    const online = () => void reconcile();
+    const storage = () => void reconcile();
+    const manualSync = () => void reconcile();
     const visibility = () => {
-      if (document.visibilityState === "visible") reconcile();
+      if (document.visibilityState === "visible") void reconcile();
     };
     window.addEventListener("online", online);
     window.addEventListener("storage", storage);
     window.addEventListener("juntos-sync-request", storage);
+    window.addEventListener("juntos-force-sync", manualSync);
     document.addEventListener("visibilitychange", visibility);
 
     const channel = supabase.channel(`workspace-records-${workspace.id}`)
@@ -292,6 +294,7 @@ export function CloudSync() {
       window.removeEventListener("online", online);
       window.removeEventListener("storage", storage);
       window.removeEventListener("juntos-sync-request", storage);
+      window.removeEventListener("juntos-force-sync", manualSync);
       document.removeEventListener("visibilitychange", visibility);
       void supabase.removeChannel(channel);
     };
