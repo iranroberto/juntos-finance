@@ -84,7 +84,7 @@ export function CloudSync() {
       window.dispatchEvent(new CustomEvent("juntos-sync-status", { detail: { status, error } }));
 
     const notifyDataChanged = () => {
-      ["juntos-transactions-updated", "juntos-goals-updated", "juntos-calendar-updated", "juntos-debts-updated"]
+      ["juntos-transactions-updated", "juntos-goals-updated", "juntos-calendar-updated", "juntos-debts-updated", "juntos-accounts-updated", "juntos-cards-updated"]
         .forEach(name => window.dispatchEvent(new Event(name)));
       window.dispatchEvent(new Event("juntos-cloud-synced"));
     };
