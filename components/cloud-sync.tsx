@@ -256,12 +256,27 @@ export function CloudSync() {
       }
     })();
 
+    // Realtime is useful for immediate updates, but a browser can occasionally
+    // miss an event after sleeping, changing networks or restoring a tab. A
+    // small reconciliation keeps each device aligned with the workspace without
+    // discarding local changes that are still in the queue.
+    const reconcile = () => {
+      detectLocalChanges();
+      void pullAndApply();
+      void flush();
+    };
+
     const poll = window.setInterval(detectLocalChanges, 700);
-    const online = () => { detectLocalChanges(); void flush(); };
-    const storage = () => detectLocalChanges();
+    const reconciliationPoll = window.setInterval(reconcile, 30_000);
+    const online = reconcile;
+    const storage = reconcile;
+    const visibility = () => {
+      if (document.visibilityState === "visible") reconcile();
+    };
     window.addEventListener("online", online);
     window.addEventListener("storage", storage);
     window.addEventListener("juntos-sync-request", storage);
+    document.addEventListener("visibilitychange", visibility);
 
     const channel = supabase.channel(`workspace-records-${workspace.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "workspace_records", filter: `workspace_id=eq.${workspace.id}` }, () => {
@@ -272,10 +287,12 @@ export function CloudSync() {
     return () => {
       stopped = true;
       window.clearInterval(poll);
+      window.clearInterval(reconciliationPoll);
       window.clearTimeout(pullTimer);
       window.removeEventListener("online", online);
       window.removeEventListener("storage", storage);
       window.removeEventListener("juntos-sync-request", storage);
+      document.removeEventListener("visibilitychange", visibility);
       void supabase.removeChannel(channel);
     };
   }, [workspace?.id, workspace?.role]);
