@@ -1,4 +1,4 @@
-const CACHE = "juntos-finance-v13";
+const CACHE = "juntos-finance-v14";
 const APP_ICON_PATH = "/icons/juntos-app-icon-192-v2.png?v=12";
 const APP_ICON = new URL(APP_ICON_PATH, self.location.origin).href;
 const BADGE_ICON = new URL("/icons/juntos-notification-badge-96-v1.png?v=13", self.location.origin).href;
