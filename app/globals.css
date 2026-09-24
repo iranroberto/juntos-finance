@@ -747,3 +747,8 @@ html,body{max-width:100%;overflow-x:clip}.main-shell,.main-shell main,.page-stac
     grid-template-columns:100px minmax(190px,1.4fr) minmax(100px,.8fr) minmax(120px,1fr) 165px 105px 60px;
   }
 }
+.mobile-transaction-export{display:none}
+@media(max-width:760px){.mobile-transaction-export{display:flex;width:100%;min-height:46px;margin:0 0 14px;align-items:center;justify-content:center;gap:9px;border:1px solid var(--wine);border-radius:12px;background:color-mix(in srgb,var(--wine) 12%,var(--surface));color:var(--wine);font-weight:800}}
+
+.mobile-transaction-export{display:none}
+@media(max-width:760px){.mobile-transaction-export{display:flex;width:100%;min-height:46px;margin:0 0 14px;align-items:center;justify-content:center;gap:9px;border:1px solid var(--wine);border-radius:12px;background:color-mix(in srgb,var(--wine) 12%,var(--surface));color:var(--wine);font-weight:800}}
