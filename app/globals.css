@@ -752,3 +752,13 @@ html,body{max-width:100%;overflow-x:clip}.main-shell,.main-shell main,.page-stac
 
 .mobile-transaction-export{display:none}
 @media(max-width:760px){.mobile-transaction-export{display:flex;width:100%;min-height:46px;margin:0 0 14px;align-items:center;justify-content:center;gap:9px;border:1px solid var(--wine);border-radius:12px;background:color-mix(in srgb,var(--wine) 12%,var(--surface));color:var(--wine);font-weight:800}}
+
+.installment-planner{display:grid;gap:16px;padding:22px 24px;border:1px solid color-mix(in srgb,var(--line) 85%,#39b9c7);border-radius:22px;background:color-mix(in srgb,var(--surface-2) 80%,#16454b 20%)}
+.installment-stepper,.installment-value-choice{display:flex;align-items:center;justify-content:space-between;gap:18px;color:var(--muted);font-size:16px}
+.installment-stepper>div{display:flex;align-items:center;gap:22px;color:var(--text)}
+.installment-stepper button{width:34px;height:34px;border:0;border-radius:10px;background:transparent;color:var(--text);font-size:31px;line-height:1;cursor:pointer}
+.installment-stepper button:disabled{opacity:.35;cursor:not-allowed}.installment-stepper b{min-width:48px;text-align:center;color:var(--text);font-size:24px}
+.installment-value-choice>div{display:flex;gap:7px;padding:4px;border-radius:999px;background:var(--surface)}
+.installment-value-choice button{border:0;border-radius:999px;padding:10px 18px;background:transparent;color:var(--text);font:inherit;cursor:pointer}.installment-value-choice button.active{border:1px solid #36bcc5;color:#42c4ce;font-weight:800;background:color-mix(in srgb,#36bcc5 10%,var(--surface))}
+.installment-planner p{margin:0;color:var(--muted);font-size:14px}.installment-planner>strong{color:var(--text);font-size:15px}.installment-recalculate{display:flex;align-items:flex-start;gap:9px;font-size:13px;color:var(--muted)}.installment-recalculate input{width:17px;height:17px;accent-color:#36bcc5}
+@media(max-width:560px){.installment-planner{padding:18px}.installment-stepper,.installment-value-choice{font-size:14px}.installment-value-choice>div{gap:2px}.installment-value-choice button{padding:9px 12px}.installment-stepper>div{gap:12px}.installment-stepper b{font-size:20px}}
