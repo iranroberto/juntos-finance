@@ -89,9 +89,10 @@ export function CloudSync() {
     const emitStatus = (status: "syncing" | "synced" | "offline" | "error", error?: string) =>
       window.dispatchEvent(new CustomEvent("juntos-sync-status", { detail: { status, error } }));
 
+    const SYNCED_DETAIL = { source: "cloud-sync" };
     const notifyDataChanged = () => {
       ["juntos-transactions-updated", "juntos-goals-updated", "juntos-calendar-updated", "juntos-debts-updated", "juntos-accounts-updated", "juntos-cards-updated"]
-        .forEach(name => window.dispatchEvent(new Event(name)));
+        .forEach(name => window.dispatchEvent(new CustomEvent(name, { detail: SYNCED_DETAIL })));
       window.dispatchEvent(new Event("juntos-cloud-synced"));
     };
 
@@ -274,8 +275,14 @@ export function CloudSync() {
 
     const poll = window.setInterval(detectLocalChanges, 700);
     const reconciliationPoll = window.setInterval(() => void reconcile(), 30_000);
+    let changeTimer: number | undefined;
     const online = () => void reconcile();
     const storage = () => void reconcile();
+    const scheduleChangeSync = (event: Event) => {
+      if ((event as CustomEvent<{ source?: string }>).detail?.source === "cloud-sync") return;
+      window.clearTimeout(changeTimer);
+      changeTimer = window.setTimeout(() => void reconcile(), 80);
+    };
     const manualSync = () => void reconcile();
     const visibility = () => {
       if (document.visibilityState === "visible") void reconcile();
@@ -283,6 +290,8 @@ export function CloudSync() {
     window.addEventListener("online", online);
     window.addEventListener("storage", storage);
     window.addEventListener("juntos-sync-request", storage);
+    ["juntos-transactions-updated", "juntos-goals-updated", "juntos-calendar-updated", "juntos-debts-updated", "juntos-accounts-updated", "juntos-cards-updated", "juntos-budgets-updated"]
+      .forEach(name => window.addEventListener(name, scheduleChangeSync));
     window.addEventListener("juntos-force-sync", manualSync);
     document.addEventListener("visibilitychange", visibility);
 
@@ -297,9 +306,12 @@ export function CloudSync() {
       window.clearInterval(poll);
       window.clearInterval(reconciliationPoll);
       window.clearTimeout(pullTimer);
+      window.clearTimeout(changeTimer);
       window.removeEventListener("online", online);
       window.removeEventListener("storage", storage);
       window.removeEventListener("juntos-sync-request", storage);
+      ["juntos-transactions-updated", "juntos-goals-updated", "juntos-calendar-updated", "juntos-debts-updated", "juntos-accounts-updated", "juntos-cards-updated", "juntos-budgets-updated"]
+        .forEach(name => window.removeEventListener(name, scheduleChangeSync));
       window.removeEventListener("juntos-force-sync", manualSync);
       document.removeEventListener("visibilitychange", visibility);
       void supabase.removeChannel(channel);
