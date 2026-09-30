@@ -27,6 +27,15 @@ type Queue = Record<string, Change>;
 
 const newEntityId = (entityType: string) => `${entityType}-${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
 
+// A value of zero is valid only when both copies agree. A stale mobile queue
+// must never overwrite a complete transaction stored in the workspace.
+const remoteHasCompleteTransactionValue = (entityType: string, localData: unknown, remoteData: unknown) => {
+  if (entityType !== "transactions" || !localData || !remoteData || typeof localData !== "object" || typeof remoteData !== "object") return false;
+  const local = localData as { value?: unknown };
+  const remote = remoteData as { value?: unknown };
+  return Number(remote.value || 0) > 0 && Number(local.value || 0) <= 0;
+};
+
 function scanLocal(): Map<string, LocalRecord> {
   const records = new Map<string, LocalRecord>();
   syncedStorageKeys().forEach(key => {
@@ -140,13 +149,22 @@ export function CloudSync() {
           else merged.set(row.entity_id, row.data);
         });
         Object.values(queue).filter(change => change.entity_type === entityType).forEach(change => {
-          if (change.deleted) merged.delete(change.entity_id);
-          else merged.set(change.entity_id, change.data);
+          if (change.deleted) {
+            merged.delete(change.entity_id);
+            return;
+          }
+          const remote = entityRows.find(row => row.entity_id === change.entity_id && !row.deleted_at);
+          if (remote && remoteHasCompleteTransactionValue(entityType, change.data, remote.data)) {
+            delete queue[recordKey(change.entity_type, change.entity_id)];
+            return;
+          }
+          merged.set(change.entity_id, change.data);
         });
         if (merged.size || Array.isArray(localValue)) localStorage.setItem(key, JSON.stringify([...merged.values()]));
         else localStorage.removeItem(key);
       });
 
+      saveQueue(queue);
       baseline = scanLocal();
       applying = false;
       if (before !== JSON.stringify(Object.fromEntries(baseline))) notifyDataChanged();
