@@ -199,6 +199,45 @@ export function CloudSync() {
       void flush();
     };
 
+    const importMissingLegacyRecords = async (rows: RemoteRecord[]) => {
+      const { data: legacy } = await supabase.from("workspace_state").select("state")
+        .eq("workspace_id", workspace.id).maybeSingle();
+      const legacyState = legacy?.state as Record<string, unknown> | undefined;
+      if (!legacyState || !Object.keys(legacyState).length) return false;
+
+      const remoteKeys = new Set(rows.map(row => recordKey(row.entity_type, row.entity_id)));
+      let changed = false;
+      applying = true;
+      try {
+        Object.entries(legacyState).forEach(([key, rawValue]) => {
+          if (!key.startsWith(PREFIX) || LOCAL_ONLY.has(key)) return;
+          const entityType = key.slice(PREFIX.length);
+          const legacyValue = typeof rawValue === "string" ? safeParse(rawValue) : rawValue;
+          if (legacyValue === null) return;
+          const localValue = safeParse(localStorage.getItem(key));
+
+          if (Array.isArray(legacyValue)) {
+            const current = Array.isArray(localValue) ? localValue : [];
+            const currentIds = new Set(current.map((item, index) => String((item as { id?: string | number })?.id ?? `index-${index}`)));
+            const missing = legacyValue.filter((item, index) => {
+              const id = String((item as { id?: string | number })?.id ?? `index-${index}`);
+              return !currentIds.has(id) && !remoteKeys.has(recordKey(entityType, id));
+            });
+            if (missing.length) {
+              localStorage.setItem(key, JSON.stringify([...current, ...missing]));
+              changed = true;
+            }
+          } else if (localValue === null && !remoteKeys.has(recordKey(entityType, "singleton"))) {
+            localStorage.setItem(key, JSON.stringify(legacyValue));
+            changed = true;
+          }
+        });
+      } finally {
+        applying = false;
+      }
+      return changed;
+    };
+
     const pullAndApply = async () => {
       if (stopped) return;
       try {
@@ -214,17 +253,8 @@ export function CloudSync() {
       emitStatus("syncing");
       try {
         let rows = await pullAll();
+        await importMissingLegacyRecords(rows);
         if (!rows.length) {
-          const { data: legacy } = await supabase.from("workspace_state").select("state")
-            .eq("workspace_id", workspace.id).maybeSingle();
-          const legacyState = legacy?.state as Record<string, string> | undefined;
-          if (legacyState && Object.keys(legacyState).length) {
-            applying = true;
-            Object.entries(legacyState).forEach(([key, value]) => {
-              if (key.startsWith(PREFIX) && !LOCAL_ONLY.has(key)) localStorage.setItem(key, value);
-            });
-            applying = false;
-          }
           if (canWrite) {
             const queue = loadQueue();
             scanLocal().forEach((record, key) => { queue[key] = record; });
