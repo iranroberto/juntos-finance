@@ -775,3 +775,5 @@ html,body{max-width:100%;overflow-x:clip}.main-shell,.main-shell main,.page-stac
   .transactions-total-metric .metric>small{display:block;overflow:visible;text-overflow:clip;white-space:normal;padding:0;font-size:10px;line-height:1.35}
   .mobile-transaction-export{margin:0 0 16px;min-height:52px;border-radius:14px}
 }
+/* Keep the open custom-category menu above its neighboring cards. */
+.custom-category-card:has(.custom-category-menu){z-index:20}
