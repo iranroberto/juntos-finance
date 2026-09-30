@@ -320,7 +320,7 @@ html,body{max-width:100%;overflow-x:clip}.main-shell,.main-shell main,.page-stac
   .dashboard-columns{grid-template-columns:minmax(0,1fr)}.dashboard-column{width:100%}
 }
 @media (max-width:420px){
-  .topbar{padding-inline:10px;gap:6px}.sync-indicator{display:none}.main-shell main{padding-left:12px;padding-right:12px}
+  .topbar{padding-inline:10px;gap:6px}.sync-indicator{display:flex;width:32px;height:32px;justify-content:center;border-radius:10px}.sync-indicator i{width:8px;height:8px}.main-shell main{padding-left:12px;padding-right:12px}
   .welcome-actions{gap:7px}.section-title{gap:8px}.dashboard-transaction-tools{gap:2px}.dashboard-transaction-tools .text-button{font-size:10px;padding-inline:3px}
 }
 @media (max-width:280px){

@@ -36,6 +36,9 @@ const remoteHasCompleteTransactionValue = (entityType: string, localData: unknow
   return Number(remote.value || 0) > 0 && Number(local.value || 0) <= 0;
 };
 
+const localHasCompleteTransactionValue = (entityType: string, localData: unknown, remoteData: unknown) =>
+  remoteHasCompleteTransactionValue(entityType, remoteData, localData);
+
 function scanLocal(): Map<string, LocalRecord> {
   const records = new Map<string, LocalRecord>();
   syncedStorageKeys().forEach(key => {
@@ -145,8 +148,16 @@ export function CloudSync() {
           merged.set(String(candidate?.id ?? `index-${index}`), item);
         });
         entityRows.forEach(row => {
-          if (row.deleted_at) merged.delete(row.entity_id);
-          else merged.set(row.entity_id, row.data);
+          if (row.deleted_at) {
+            merged.delete(row.entity_id);
+            return;
+          }
+          const local = merged.get(row.entity_id);
+          if (localHasCompleteTransactionValue(entityType, local, row.data)) {
+            queue[recordKey(entityType, row.entity_id)] = { entity_type: entityType, entity_id: row.entity_id, data: local };
+            return;
+          }
+          merged.set(row.entity_id, row.data);
         });
         Object.values(queue).filter(change => change.entity_type === entityType).forEach(change => {
           if (change.deleted) {
