@@ -11,6 +11,7 @@ const LOCAL_ONLY = new Set([
   "juntos-system-notifications",
 ]);
 const DOCUMENT_TYPES = new Set(["balances", "settings", "dashboard-prefs", "space"]);
+const LEGACY_RECOVERY_TYPES = new Set(["accounts"]);
 const recordKey = (entityType: string, entityId: string) => `${entityType}::${entityId}`;
 const storageKey = (entityType: string) => `${PREFIX}${entityType}`;
 const safeParse = (value: string | null): unknown => {
@@ -149,6 +150,9 @@ export function CloudSync() {
         });
         entityRows.forEach(row => {
           if (row.deleted_at) {
+            // A tombstone always wins over a cached edit. Without this, another
+            // device can replay an old queue entry and recreate a deleted record.
+            delete queue[recordKey(entityType, row.entity_id)];
             merged.delete(row.entity_id);
             return;
           }
@@ -241,6 +245,10 @@ export function CloudSync() {
         Object.entries(legacyState).forEach(([key, rawValue]) => {
           if (!key.startsWith(PREFIX) || LOCAL_ONLY.has(key)) return;
           const entityType = key.slice(PREFIX.length);
+          // Once incremental records exist, only recover accounts from the
+          // legacy snapshot. Re-importing old transactions can resurrect an
+          // item that was already deleted in the incremental store.
+          if (rows.length > 0 && !LEGACY_RECOVERY_TYPES.has(entityType)) return;
           const legacyValue = typeof rawValue === "string" ? safeParse(rawValue) : rawValue;
           if (legacyValue === null) return;
           const localValue = safeParse(localStorage.getItem(key));

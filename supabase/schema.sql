@@ -159,7 +159,10 @@ begin
       deleted_at=excluded.deleted_at,
       updated_by=auth.uid(),
       updated_at=now(),
-      revision=workspace_records.revision+1;
+      revision=workspace_records.revision+1
+    -- An old offline queue must never revive a record that was deleted.
+    -- New records use a different id, so deletion remains irreversible.
+    where workspace_records.deleted_at is null or excluded.deleted_at is not null;
   end loop;
   return query select * from workspace_records where workspace_id=target_workspace and (entity_type,entity_id) in (select value->>'entity_type',value->>'entity_id' from jsonb_array_elements(changes));
 end $$;
