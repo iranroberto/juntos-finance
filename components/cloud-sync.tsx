@@ -40,6 +40,17 @@ const remoteHasCompleteTransactionValue = (entityType: string, localData: unknow
 const localHasCompleteTransactionValue = (entityType: string, localData: unknown, remoteData: unknown) =>
   remoteHasCompleteTransactionValue(entityType, remoteData, localData);
 
+// A payment is a terminal state for an individual transaction.  A device can
+// briefly have an older queued copy of the same item, so do not let that copy
+// turn a payment that was already confirmed locally back into a pending bill.
+const isPaidTransaction = (data: unknown) => {
+  if (!data || typeof data !== "object") return false;
+  const item = data as { status?: unknown; paidAt?: unknown; paid?: unknown };
+  return item.status === "Pago" || item.status === "Efetivada" || Boolean(item.paidAt) || item.paid === true;
+};
+const localHasPaidTransaction = (entityType: string, localData: unknown, remoteData: unknown) =>
+  entityType === "transactions" && isPaidTransaction(localData) && !isPaidTransaction(remoteData);
+
 function scanLocal(): Map<string, LocalRecord> {
   const records = new Map<string, LocalRecord>();
   syncedStorageKeys().forEach(key => {
@@ -95,7 +106,7 @@ export function CloudSync() {
     let stopped = false;
     let applying = false;
     let ready = false;
-    let flushing = false;
+    let flushPromise: Promise<boolean> | null = null;
     let baseline = new Map<string, LocalRecord>();
     let pullTimer: number | undefined;
 
@@ -157,6 +168,10 @@ export function CloudSync() {
             return;
           }
           const local = merged.get(row.entity_id);
+          if (localHasPaidTransaction(entityType, local, row.data)) {
+            queue[recordKey(entityType, row.entity_id)] = { entity_type: entityType, entity_id: row.entity_id, data: local };
+            return;
+          }
           if (localHasCompleteTransactionValue(entityType, local, row.data)) {
             queue[recordKey(entityType, row.entity_id)] = { entity_type: entityType, entity_id: row.entity_id, data: local };
             return;
@@ -185,38 +200,43 @@ export function CloudSync() {
       if (before !== JSON.stringify(Object.fromEntries(baseline))) notifyDataChanged();
     };
 
-    const flush = async () => {
-      if (!canWrite || !navigator.onLine) { emitStatus("offline"); return; }
-      if (flushing) return;
-      const queue = loadQueue();
-      const pending = Object.entries(queue);
-      if (!pending.length) { emitStatus("synced"); return; }
-      flushing = true;
-      emitStatus("syncing");
-      try {
-        for (let index = 0; index < pending.length; index += 200) {
-          const batch = pending.slice(index, index + 200);
-          const { error } = await supabase.rpc("apply_workspace_changes", {
-            target_workspace: workspace.id,
-            changes: batch.map(([, change]) => change),
-          });
-          if (error) throw error;
-          const current = loadQueue();
-          batch.forEach(([key, sent]) => {
-            if (JSON.stringify(current[key]) === JSON.stringify(sent)) delete current[key];
-          });
-          saveQueue(current);
-        }
-        const rows = await pullAll();
-        if (!stopped) applyRemote(rows, loadQueue());
-        emitStatus("synced");
-      } catch (reason) {
-        emitStatus(navigator.onLine ? "error" : "offline", reason instanceof Error ? reason.message : "Falha na sincronização");
-      } finally {
-        flushing = false;
+    const flush = (): Promise<boolean> => {
+      if (!canWrite || !navigator.onLine) {
+        emitStatus("offline", canWrite ? undefined : "Sem permissão para enviar alterações neste espaço.");
+        return Promise.resolve(false);
       }
-    };
+      if (flushPromise) return flushPromise;
 
+      const run = async (): Promise<boolean> => {
+        const pending = Object.entries(loadQueue());
+        if (!pending.length) return true;
+        emitStatus("syncing");
+        try {
+          for (let index = 0; index < pending.length; index += 200) {
+            const batch = pending.slice(index, index + 200);
+            const { error } = await supabase.rpc("apply_workspace_changes", {
+              target_workspace: workspace.id,
+              changes: batch.map(([, change]) => change),
+            });
+            if (error) throw error;
+            const current = loadQueue();
+            batch.forEach(([key, sent]) => {
+              if (JSON.stringify(current[key]) === JSON.stringify(sent)) delete current[key];
+            });
+            saveQueue(current);
+          }
+          const rows = await pullAll();
+          if (!stopped) applyRemote(rows, loadQueue());
+          return !Object.keys(loadQueue()).length;
+        } catch (reason) {
+          emitStatus(navigator.onLine ? "error" : "offline", reason instanceof Error ? reason.message : "Falha na sincronização");
+          return false;
+        }
+      };
+
+      flushPromise = run().finally(() => { flushPromise = null; });
+      return flushPromise;
+    };
     const detectLocalChanges = () => {
       if (!ready || applying || !canWrite) return;
       const current = scanLocal();
@@ -229,7 +249,7 @@ export function CloudSync() {
       });
       baseline = current;
       saveQueue(queue);
-      void flush();
+      void flush().then(sent => { if (sent && !Object.keys(loadQueue()).length) emitStatus("synced"); });
     };
 
     const importMissingLegacyRecords = async (rows: RemoteRecord[]) => {
@@ -275,14 +295,15 @@ export function CloudSync() {
       return changed;
     };
 
-    const pullAndApply = async () => {
-      if (stopped) return;
+    const pullAndApply = async (): Promise<boolean> => {
+      if (stopped) return false;
       try {
         const rows = await pullAll();
         if (!stopped) applyRemote(rows, loadQueue());
-        emitStatus("synced");
+        return true;
       } catch (reason) {
         emitStatus(navigator.onLine ? "error" : "offline", reason instanceof Error ? reason.message : "Falha na sincronização");
+        return false;
       }
     };
 
@@ -321,8 +342,9 @@ export function CloudSync() {
         }
         baseline = scanLocal();
         ready = true;
-        await flush();
+        const sent = await flush();
         notifyDataChanged();
+        if (sent && !Object.keys(loadQueue()).length) emitStatus("synced");
       } catch (reason) {
         baseline = scanLocal();
         ready = true;
@@ -336,8 +358,10 @@ export function CloudSync() {
     // discarding local changes that are still in the queue.
     const reconcile = async () => {
       detectLocalChanges();
-      await flush();
-      await pullAndApply();
+      const sent = await flush();
+      if (!sent || Object.keys(loadQueue()).length) return;
+      const pulled = await pullAndApply();
+      if (pulled && !Object.keys(loadQueue()).length) emitStatus("synced");
     };
 
     const poll = window.setInterval(detectLocalChanges, 700);
